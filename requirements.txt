@@ -1,0 +1,12 @@
+fastapi==0.115.8
+pydantic==2.10.6
+pydantic-core==2.27.2
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+requests==2.32.3
+faster-whisper==1.1.1
+
+opencc-python-reimplemented==0.1.7
+python-dotenv==1.0.1
+
+
