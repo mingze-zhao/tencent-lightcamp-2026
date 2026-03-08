@@ -8,20 +8,37 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { ApiNotImplementedError, ApiService } from '@/services/api';
-import type { AppSettings, ElderProfile, RecordingState, ToastMessage, VisitSession } from '@/types';
+import { LLMAdapter } from '@/services/llmAdapter';
+import type {
+  AppSettings,
+  CalendarDay,
+  CommunityBodyStat,
+  ElderProfile,
+  RecordingState,
+  ToastMessage,
+  VisitSession,
+} from '@/types';
 
 type AppStatus = 'idle' | 'loading' | 'ready' | 'error';
+type PageKey = 'workbench' | 'community';
 
 interface AppState {
   status: AppStatus;
   errorMessage?: string;
   elders: ElderProfile[];
   selectedElderId?: string;
+  selectedSessionId?: string;
+  selectedDate?: string;
   selectedSession?: VisitSession;
+  sessionsByElder: Record<string, VisitSession[]>;
+  calendarDays: CalendarDay[];
+  communityBodyStats: CommunityBodyStat[];
+  currentPage: PageKey;
   recordingState: RecordingState;
   recordingSeconds: number;
   transcriptSearchKeyword: string;
   activeSegmentId?: string;
+  activeSourceRefId?: string;
   notifications: ToastMessage[];
   isSettingsOpen: boolean;
   isAddElderOpen: boolean;
@@ -33,11 +50,18 @@ type AppAction =
   | { type: 'setError'; payload?: string }
   | { type: 'setElders'; payload: ElderProfile[] }
   | { type: 'setSelectedElder'; payload?: string }
-  | { type: 'setSession'; payload?: VisitSession }
+  | { type: 'setSelectedDate'; payload?: string }
+  | { type: 'setSessionsByElder'; payload: { elderId: string; sessions: VisitSession[] } }
+  | { type: 'setCalendarDays'; payload: CalendarDay[] }
+  | { type: 'setSelectedSession'; payload?: VisitSession }
+  | { type: 'setSelectedSessionId'; payload?: string }
+  | { type: 'setCommunityStats'; payload: CommunityBodyStat[] }
+  | { type: 'setCurrentPage'; payload: PageKey }
   | { type: 'setRecordingState'; payload: RecordingState }
   | { type: 'setRecordingSeconds'; payload: number }
   | { type: 'setSearchKeyword'; payload: string }
   | { type: 'setActiveSegment'; payload?: string }
+  | { type: 'setActiveSourceRef'; payload?: string }
   | { type: 'addToast'; payload: ToastMessage }
   | { type: 'removeToast'; payload: string }
   | { type: 'setSettingsOpen'; payload: boolean }
@@ -59,11 +83,16 @@ const defaultSettings: AppSettings = {
   useMock: true,
   apiBaseUrl: '',
   autoGenerateReport: false,
+  mode: 'demo',
 };
 
 const initialState: AppState = {
   status: 'idle',
   elders: [],
+  sessionsByElder: {},
+  calendarDays: [],
+  communityBodyStats: [],
+  currentPage: 'workbench',
   recordingState: 'idle',
   recordingSeconds: 0,
   transcriptSearchKeyword: '',
@@ -71,6 +100,12 @@ const initialState: AppState = {
   isSettingsOpen: false,
   isAddElderOpen: false,
   settings: defaultSettings,
+};
+
+const pickSessionByDate = (sessions: VisitSession[], date?: string) => {
+  if (!sessions.length) return undefined;
+  if (!date) return sessions[0];
+  return sessions.find((session) => session.date === date) ?? sessions[0];
 };
 
 function reducer(state: AppState, action: AppAction): AppState {
@@ -83,8 +118,26 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, elders: action.payload };
     case 'setSelectedElder':
       return { ...state, selectedElderId: action.payload };
-    case 'setSession':
+    case 'setSelectedDate':
+      return { ...state, selectedDate: action.payload };
+    case 'setSessionsByElder':
+      return {
+        ...state,
+        sessionsByElder: {
+          ...state.sessionsByElder,
+          [action.payload.elderId]: action.payload.sessions,
+        },
+      };
+    case 'setCalendarDays':
+      return { ...state, calendarDays: action.payload };
+    case 'setSelectedSession':
       return { ...state, selectedSession: action.payload };
+    case 'setSelectedSessionId':
+      return { ...state, selectedSessionId: action.payload };
+    case 'setCommunityStats':
+      return { ...state, communityBodyStats: action.payload };
+    case 'setCurrentPage':
+      return { ...state, currentPage: action.payload };
     case 'setRecordingState':
       return { ...state, recordingState: action.payload };
     case 'setRecordingSeconds':
@@ -93,6 +146,8 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, transcriptSearchKeyword: action.payload };
     case 'setActiveSegment':
       return { ...state, activeSegmentId: action.payload };
+    case 'setActiveSourceRef':
+      return { ...state, activeSourceRefId: action.payload };
     case 'addToast':
       return { ...state, notifications: [action.payload, ...state.notifications] };
     case 'removeToast':
@@ -129,9 +184,14 @@ interface AppStoreValue {
   state: AppState;
   initialize: () => Promise<void>;
   selectElder: (elderId: string) => Promise<void>;
+  selectDate: (date: string) => void;
+  selectSession: (sessionId: string) => void;
   setSearchKeyword: (keyword: string) => void;
   setActiveSegment: (segmentId?: string) => void;
+  setActiveSourceRef: (sourceRefId?: string) => void;
+  setCurrentPage: (page: PageKey) => void;
   toggleRecording: () => Promise<void>;
+  appendTranscriptAndGenerate: (segmentText: string) => Promise<void>;
   runExtractAndReport: () => Promise<void>;
   toggleActionItem: (itemId: string, checked: boolean) => Promise<void>;
   addElder: (payload: Omit<ElderProfile, 'id'>) => Promise<void>;
@@ -145,7 +205,6 @@ interface AppStoreValue {
 }
 
 const AppStoreContext = createContext<AppStoreValue | null>(null);
-
 const makeToastId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export function AppStoreProvider({ children }: PropsWithChildren) {
@@ -162,11 +221,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
   const handleApiError = useCallback(
     (error: unknown) => {
       if (error instanceof ApiNotImplementedError) {
-        pushToast({
-          type: 'warning',
-          title: 'API 未接入',
-          description: error.message,
-        });
+        pushToast({ type: 'warning', title: 'API 未接入', description: error.message });
         return;
       }
       const message = error instanceof Error ? error.message : '未知错误';
@@ -176,6 +231,39 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
     [pushToast]
   );
 
+  const resolveCtx = useCallback(
+    (override?: { useMock: boolean; apiBaseUrl: string }) => ({
+      useMock: override?.useMock ?? state.settings.useMock,
+      baseUrl: override?.apiBaseUrl ?? state.settings.apiBaseUrl,
+    }),
+    [state.settings.apiBaseUrl, state.settings.useMock]
+  );
+
+  const refreshCommunityStats = useCallback(async () => {
+    const stats = await ApiService.getCommunityBodyStats(resolveCtx());
+    dispatch({ type: 'setCommunityStats', payload: stats });
+  }, [resolveCtx]);
+
+  const selectElder = useCallback(
+    async (elderId: string, override?: { useMock: boolean; apiBaseUrl: string }) => {
+      dispatch({ type: 'setSelectedElder', payload: elderId });
+      dispatch({ type: 'setStatus', payload: 'loading' });
+      try {
+        const sessions = await ApiService.getSessionsByElder(elderId, resolveCtx(override));
+        dispatch({ type: 'setSessionsByElder', payload: { elderId, sessions } });
+        const next = pickSessionByDate(sessions, state.selectedDate);
+        dispatch({ type: 'setSelectedSession', payload: next });
+        dispatch({ type: 'setSelectedSessionId', payload: next?.id });
+        dispatch({ type: 'setSelectedDate', payload: next?.date });
+        dispatch({ type: 'setStatus', payload: 'ready' });
+      } catch (error) {
+        dispatch({ type: 'setStatus', payload: 'error' });
+        handleApiError(error);
+      }
+    },
+    [handleApiError, resolveCtx, state.selectedDate]
+  );
+
   const initialize = useCallback(async () => {
     dispatch({ type: 'setStatus', payload: 'loading' });
     try {
@@ -183,39 +271,50 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       if (stored) {
         dispatch({ type: 'mergeSettings', payload: JSON.parse(stored) as Partial<AppSettings> });
       }
-      const useMock = stored ? (JSON.parse(stored) as Partial<AppSettings>).useMock ?? true : true;
-      const apiBaseUrl = stored ? (JSON.parse(stored) as Partial<AppSettings>).apiBaseUrl ?? '' : '';
-      const elders = await ApiService.getElders({ useMock, baseUrl: apiBaseUrl });
+      const override = stored
+        ? {
+            useMock: (JSON.parse(stored) as Partial<AppSettings>).useMock ?? true,
+            apiBaseUrl: (JSON.parse(stored) as Partial<AppSettings>).apiBaseUrl ?? '',
+          }
+        : undefined;
+      const elders = await ApiService.getElders(resolveCtx(override));
+      const calendar = await ApiService.getCalendarDays(resolveCtx(override));
       dispatch({ type: 'setElders', payload: elders });
-      dispatch({ type: 'setStatus', payload: 'ready' });
+      dispatch({ type: 'setCalendarDays', payload: calendar });
       if (elders.length > 0) {
-        await selectElder(elders[0].id, { useMock, apiBaseUrl });
+        await selectElder(elders[0].id, override);
+      } else {
+        dispatch({ type: 'setStatus', payload: 'ready' });
       }
+      await refreshCommunityStats();
     } catch (error) {
       dispatch({ type: 'setStatus', payload: 'error' });
       handleApiError(error);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [handleApiError, refreshCommunityStats, resolveCtx, selectElder]);
 
-  const selectElder = useCallback(
-    async (elderId: string, override?: { useMock: boolean; apiBaseUrl: string }) => {
-      dispatch({ type: 'setSelectedElder', payload: elderId });
-      dispatch({ type: 'setSession', payload: undefined });
-      dispatch({ type: 'setStatus', payload: 'loading' });
-      try {
-        const session = await ApiService.getSession(elderId, {
-          useMock: override?.useMock ?? state.settings.useMock,
-          baseUrl: override?.apiBaseUrl ?? state.settings.apiBaseUrl,
-        });
-        dispatch({ type: 'setSession', payload: session ?? undefined });
-        dispatch({ type: 'setStatus', payload: 'ready' });
-      } catch (error) {
-        dispatch({ type: 'setStatus', payload: 'error' });
-        handleApiError(error);
-      }
+  const selectDate = useCallback(
+    (date: string) => {
+      if (!state.selectedElderId) return;
+      const sessions = state.sessionsByElder[state.selectedElderId] ?? [];
+      const picked = pickSessionByDate(sessions, date);
+      dispatch({ type: 'setSelectedDate', payload: date });
+      dispatch({ type: 'setSelectedSessionId', payload: picked?.id });
+      dispatch({ type: 'setSelectedSession', payload: picked });
     },
-    [handleApiError, state.settings.apiBaseUrl, state.settings.useMock]
+    [state.selectedElderId, state.sessionsByElder]
+  );
+
+  const selectSession = useCallback(
+    (sessionId: string) => {
+      if (!state.selectedElderId) return;
+      const session = (state.sessionsByElder[state.selectedElderId] ?? []).find((item) => item.id === sessionId);
+      if (!session) return;
+      dispatch({ type: 'setSelectedSessionId', payload: session.id });
+      dispatch({ type: 'setSelectedDate', payload: session.date });
+      dispatch({ type: 'setSelectedSession', payload: session });
+    },
+    [state.selectedElderId, state.sessionsByElder]
   );
 
   const setSearchKeyword = useCallback((keyword: string) => {
@@ -226,81 +325,113 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'setActiveSegment', payload: segmentId });
   }, []);
 
+  const setActiveSourceRef = useCallback((sourceRefId?: string) => {
+    dispatch({ type: 'setActiveSourceRef', payload: sourceRefId });
+  }, []);
+
+  const setCurrentPage = useCallback((page: PageKey) => {
+    dispatch({ type: 'setCurrentPage', payload: page });
+  }, []);
+
+  const patchSelectedSession = useCallback(
+    (next: VisitSession) => {
+      if (!state.selectedElderId) return;
+      const sessions = (state.sessionsByElder[state.selectedElderId] ?? []).map((item) => (item.id === next.id ? next : item));
+      dispatch({ type: 'setSessionsByElder', payload: { elderId: state.selectedElderId, sessions } });
+      dispatch({ type: 'setSelectedSession', payload: next });
+    },
+    [state.selectedElderId, state.sessionsByElder]
+  );
+
   const toggleRecording = useCallback(async () => {
     if (state.recordingState === 'recording') {
-      dispatch({ type: 'setRecordingState', payload: 'transcribing' });
-      try {
-        const fakeAudio = new File(['mock'], 'mock.wav', { type: 'audio/wav' });
-        await ApiService.transcribeAudio(fakeAudio, {
-          useMock: state.settings.useMock,
-          baseUrl: state.settings.apiBaseUrl,
-        });
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        dispatch({ type: 'setRecordingState', payload: 'completed' });
-        pushToast({ type: 'success', title: '录音已停止', description: '已完成转写（Mock）' });
-      } catch (error) {
-        dispatch({ type: 'setRecordingState', payload: 'error' });
-        handleApiError(error);
-      }
+      dispatch({ type: 'setRecordingState', payload: 'completed' });
+      pushToast({ type: 'success', title: '录音已停止', description: '可继续追加一句并触发增量抽取。' });
       return;
     }
     dispatch({ type: 'setRecordingSeconds', payload: 0 });
     dispatch({ type: 'setRecordingState', payload: 'recording' });
-    pushToast({ type: 'info', title: '开始录音', description: '再次点击可停止并进入转写流程' });
-  }, [handleApiError, pushToast, state.recordingState, state.settings.apiBaseUrl, state.settings.useMock]);
+    pushToast({ type: 'info', title: '开始录音', description: '再次点击可停止。' });
+  }, [pushToast, state.recordingState]);
+
+  const appendTranscriptAndGenerate = useCallback(
+    async (segmentText: string) => {
+      if (!state.selectedSession) return;
+      try {
+        const appended = await ApiService.appendTranscriptSegment(state.selectedSession.id, segmentText, resolveCtx());
+        if (!appended) return;
+        const incremental = await LLMAdapter.generateIncremental(
+          state.selectedSession,
+          appended.id,
+          appended.text,
+          state.settings.mode
+        );
+        const next: VisitSession = {
+          ...state.selectedSession,
+          transcript: [...state.selectedSession.transcript, appended],
+          sourceRefs: [...(state.selectedSession.sourceRefs ?? []), incremental.sourceRef],
+          bodyMapSnapshot: state.selectedSession.bodyMapSnapshot
+            ? {
+                ...state.selectedSession.bodyMapSnapshot,
+                findings: [...state.selectedSession.bodyMapSnapshot.findings, ...(incremental.bodyFinding ? [incremental.bodyFinding] : [])],
+              }
+            : undefined,
+          extractResult: state.selectedSession.extractResult
+            ? {
+                ...state.selectedSession.extractResult,
+                warnings: incremental.warning
+                  ? [...state.selectedSession.extractResult.warnings, incremental.warning]
+                  : state.selectedSession.extractResult.warnings,
+                insightBlocks: [...(state.selectedSession.extractResult.insightBlocks ?? []), incremental.insightBlock],
+              }
+            : undefined,
+        };
+        patchSelectedSession(next);
+        dispatch({ type: 'setActiveSegment', payload: appended.id });
+        dispatch({ type: 'setActiveSourceRef', payload: incremental.sourceRef.id });
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    [handleApiError, patchSelectedSession, resolveCtx, state.selectedSession, state.settings.mode]
+  );
 
   const runExtractAndReport = useCallback(async () => {
     if (!state.selectedSession) {
-      pushToast({ type: 'warning', title: '无可处理会话', description: '请先选择一位长者会话。' });
+      pushToast({ type: 'warning', title: '无可处理会话', description: '请先选择会话。' });
       return;
     }
     dispatch({ type: 'setRecordingState', payload: 'extracting' });
     try {
-      const extract = await ApiService.extractInsights(state.selectedSession, {
-        useMock: state.settings.useMock,
-        baseUrl: state.settings.apiBaseUrl,
-      });
-      const report = await ApiService.generateReport(extract, {
-        useMock: state.settings.useMock,
-        baseUrl: state.settings.apiBaseUrl,
-      });
-      dispatch({
-        type: 'setSession',
-        payload: { ...state.selectedSession, extractResult: extract, report },
-      });
+      const extract = await ApiService.extractInsights(state.selectedSession, resolveCtx());
+      const report = await ApiService.generateReport(extract, resolveCtx());
+      patchSelectedSession({ ...state.selectedSession, extractResult: extract, report });
       dispatch({ type: 'setRecordingState', payload: 'completed' });
-      pushToast({ type: 'success', title: '报告已生成', description: '结构化信息与报告已更新。' });
+      await refreshCommunityStats();
+      pushToast({ type: 'success', title: '报告已生成', description: '结构化信息已更新。' });
     } catch (error) {
       dispatch({ type: 'setRecordingState', payload: 'error' });
       handleApiError(error);
     }
-  }, [handleApiError, pushToast, state.selectedSession, state.settings.apiBaseUrl, state.settings.useMock]);
+  }, [handleApiError, patchSelectedSession, pushToast, refreshCommunityStats, resolveCtx, state.selectedSession]);
 
   const toggleActionItem = useCallback(
     async (itemId: string, checked: boolean) => {
       if (!state.selectedSession) return;
       dispatch({ type: 'updateActionItem', payload: { itemId, checked } });
       try {
-        await ApiService.updateActionItem(
-          state.selectedSession.id,
-          itemId,
-          checked,
-          { useMock: state.settings.useMock, baseUrl: state.settings.apiBaseUrl }
-        );
+        await ApiService.updateActionItem(state.selectedSession.id, itemId, checked, resolveCtx());
       } catch (error) {
         handleApiError(error);
       }
     },
-    [handleApiError, state.selectedSession, state.settings.apiBaseUrl, state.settings.useMock]
+    [handleApiError, resolveCtx, state.selectedSession]
   );
 
   const addElder = useCallback(
     async (payload: Omit<ElderProfile, 'id'>) => {
       try {
-        const created = await ApiService.createElder(payload, {
-          useMock: state.settings.useMock,
-          baseUrl: state.settings.apiBaseUrl,
-        });
+        const created = await ApiService.createElder(payload, resolveCtx());
         dispatch({ type: 'setElders', payload: [created, ...state.elders] });
         dispatch({ type: 'setAddElderOpen', payload: false });
         pushToast({ type: 'success', title: '已新增长者档案', description: `${created.name} 已加入列表。` });
@@ -308,7 +439,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
         handleApiError(error);
       }
     },
-    [handleApiError, pushToast, state.elders, state.settings.apiBaseUrl, state.settings.useMock]
+    [handleApiError, pushToast, resolveCtx, state.elders]
   );
 
   const openSettings = useCallback(() => dispatch({ type: 'setSettingsOpen', payload: true }), []);
@@ -316,12 +447,18 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
   const openAddElder = useCallback(() => dispatch({ type: 'setAddElderOpen', payload: true }), []);
   const closeAddElder = useCallback(() => dispatch({ type: 'setAddElderOpen', payload: false }), []);
 
-  const saveSettings = useCallback((settings: Partial<AppSettings>) => {
-    const merged = { ...state.settings, ...settings };
-    dispatch({ type: 'mergeSettings', payload: settings });
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
-    pushToast({ type: 'success', title: '设置已保存', description: '新设置已生效。' });
-  }, [pushToast, state.settings]);
+  const saveSettings = useCallback(
+    (settings: Partial<AppSettings>) => {
+      const merged = { ...state.settings, ...settings };
+      if (merged.mode === 'demo') {
+        merged.useMock = true;
+      }
+      dispatch({ type: 'mergeSettings', payload: settings });
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
+      pushToast({ type: 'success', title: '设置已保存', description: '新设置已生效。' });
+    },
+    [pushToast, state.settings]
+  );
 
   useEffect(() => {
     if (state.recordingState !== 'recording') return;
@@ -336,9 +473,14 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       state,
       initialize,
       selectElder,
+      selectDate,
+      selectSession,
       setSearchKeyword,
       setActiveSegment,
+      setActiveSourceRef,
+      setCurrentPage,
       toggleRecording,
+      appendTranscriptAndGenerate,
       runExtractAndReport,
       toggleActionItem,
       addElder,
@@ -352,6 +494,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
     }),
     [
       addElder,
+      appendTranscriptAndGenerate,
       closeAddElder,
       closeSettings,
       initialize,
@@ -360,8 +503,12 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       removeToast,
       runExtractAndReport,
       saveSettings,
+      selectDate,
       selectElder,
+      selectSession,
       setActiveSegment,
+      setActiveSourceRef,
+      setCurrentPage,
       setSearchKeyword,
       state,
       toggleActionItem,

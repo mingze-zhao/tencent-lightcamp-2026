@@ -1,5 +1,5 @@
 import { MockService } from './mock';
-import { ElderProfile, ExtractResult, VisitSession } from '../types';
+import { CalendarDay, CommunityBodyStat, ElderProfile, ExtractResult, VisitSession } from '../types';
 
 export class ApiNotImplementedError extends Error {
   constructor(endpoint: string) {
@@ -35,6 +35,42 @@ export const ApiService = {
     if (!baseUrl) return notImplemented('/api/sessions');
     const response = await fetch(`${baseUrl}/api/sessions?elderId=${encodeURIComponent(elderId)}`);
     if (!response.ok) throw new Error('加载会话失败');
+    return response.json();
+  },
+  getSessionsByElder: async (elderId: string, ctx: ApiContext): Promise<VisitSession[]> => {
+    if (ctx.useMock) return MockService.getSessionsByElder(elderId);
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/sessions/by-elder');
+    const response = await fetch(`${baseUrl}/api/sessions/by-elder?elderId=${encodeURIComponent(elderId)}`);
+    if (!response.ok) throw new Error('加载会话列表失败');
+    return response.json();
+  },
+  getCalendarDays: async (ctx: ApiContext): Promise<CalendarDay[]> => {
+    if (ctx.useMock) return MockService.getCalendarDays();
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/calendar');
+    const response = await fetch(`${baseUrl}/api/calendar`);
+    if (!response.ok) throw new Error('加载日历数据失败');
+    return response.json();
+  },
+  getCommunityBodyStats: async (ctx: ApiContext): Promise<CommunityBodyStat[]> => {
+    if (ctx.useMock) return MockService.getCommunityBodyStats();
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/community/body-stats');
+    const response = await fetch(`${baseUrl}/api/community/body-stats`);
+    if (!response.ok) throw new Error('加载社区统计失败');
+    return response.json();
+  },
+  appendTranscriptSegment: async (sessionId: string, segmentText: string, ctx: ApiContext) => {
+    if (ctx.useMock) return MockService.appendTranscriptSegment(sessionId, segmentText);
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/transcript/append');
+    const response = await fetch(`${baseUrl}/api/transcript/append`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, segmentText }),
+    });
+    if (!response.ok) throw new Error('追加转写失败');
     return response.json();
   },
 

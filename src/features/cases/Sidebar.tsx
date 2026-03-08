@@ -1,23 +1,38 @@
-import { Search, UserPlus, X } from 'lucide-react';
+import { Search, UserPlus, X, Tags } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '@/state/appStore';
 import type { ElderProfile } from '@/types';
+import ElderSessionTree from './ElderSessionTree';
+import ElderCalendar from './ElderCalendar';
 
 export default function Sidebar() {
   const {
-    state: { elders, selectedElderId, isAddElderOpen, settings },
+    state: {
+      elders,
+      selectedElderId,
+      selectedSessionId,
+      selectedDate,
+      sessionsByElder,
+      calendarDays,
+      isAddElderOpen,
+      settings,
+    },
     selectElder,
+    selectDate,
+    selectSession,
     openAddElder,
     closeAddElder,
     addElder,
   } = useAppStore();
   const [query, setQuery] = useState('');
+  const [activeTag, setActiveTag] = useState<string>('');
   const [form, setForm] = useState({
     name: '',
     age: '75',
     livingStatus: '独居' as ElderProfile['livingStatus'],
     chronicDiseases: '高血压',
+    tags: '新个案',
   });
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -32,9 +47,20 @@ export default function Sidebar() {
       const rank = { high: 0, medium: 1, low: 2 };
       return rank[a.overallRisk ?? 'low'] - rank[b.overallRisk ?? 'low'];
     });
-    if (!query.trim()) return sorted;
-    return sorted.filter((elder) => elder.name.includes(query.trim()));
-  }, [elders, query]);
+    return sorted.filter((elder) => {
+      const byQuery = query.trim()
+        ? elder.name.includes(query.trim()) || (elder.tags ?? []).some((tag) => tag.includes(query.trim()))
+        : true;
+      const byTag = activeTag ? (elder.tags ?? []).includes(activeTag) : true;
+      return byQuery && byTag;
+    });
+  }, [activeTag, elders, query]);
+
+  const allTags = useMemo(
+    () => Array.from(new Set(elders.flatMap((elder) => elder.tags ?? []))).sort((a, b) => a.localeCompare(b)),
+    [elders]
+  );
+  const selectedSessions = selectedElderId ? sessionsByElder[selectedElderId] ?? [] : [];
 
   return (
     <div className="relative flex h-full flex-col">
@@ -58,6 +84,29 @@ export default function Sidebar() {
             className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
           />
         </div>
+        <div className="mt-3">
+          <div className="mb-1 flex items-center gap-1 text-[11px] font-medium text-slate-500">
+            <Tags className="h-3 w-3" />
+            标签筛选
+          </div>
+          <div className="flex flex-wrap gap-1">
+            <button
+              className={`rounded-full px-2 py-0.5 text-[10px] ${activeTag ? 'bg-slate-100 text-slate-600' : 'bg-blue-100 text-blue-700'}`}
+              onClick={() => setActiveTag('')}
+            >
+              全部
+            </button>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                className={`rounded-full px-2 py-0.5 text-[10px] ${activeTag === tag ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}
+                onClick={() => setActiveTag((prev) => (prev === tag ? '' : tag))}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -67,32 +116,48 @@ export default function Sidebar() {
               没有匹配到长者档案
             </div>
           ) : filteredElders.map((elder, idx) => (
-            <motion.div 
-              key={elder.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              onClick={() => {
-                void selectElder(elder.id);
-              }}
-              className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                elder.id === selectedElderId ? 'bg-blue-50 border border-blue-200' : 'hover:bg-slate-50 border border-transparent'
-              }`}
-              role="button"
-              aria-label={`切换到${elder.name}个案`}
-            >
-              <div className="flex justify-between items-start mb-1">
-                <div className="font-medium text-slate-900">{elder.name}</div>
-                <div className={`w-2 h-2 rounded-full mt-1.5 ${
-                  elder.overallRisk === 'high' ? 'bg-red-500' : 
-                  elder.overallRisk === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
-                }`} />
-              </div>
-              <div className="flex justify-between items-center text-xs text-slate-500">
-                <span>{elder.age}岁</span>
-                <span>{elder.lastVisitDate ?? '-'}</span>
-              </div>
-            </motion.div>
+            <div key={elder.id}>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                onClick={() => {
+                  void selectElder(elder.id);
+                }}
+                className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                  elder.id === selectedElderId ? 'bg-blue-50 border border-blue-200' : 'hover:bg-slate-50 border border-transparent'
+                }`}
+                role="button"
+                aria-label={`切换到${elder.name}个案`}
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <div className="font-medium text-slate-900">{elder.name}</div>
+                  <div className={`w-2 h-2 rounded-full mt-1.5 ${
+                    elder.overallRisk === 'high' ? 'bg-red-500' :
+                    elder.overallRisk === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`} />
+                </div>
+                <div className="flex justify-between items-center text-xs text-slate-500">
+                  <span>{elder.age}岁</span>
+                  <span>{elder.lastVisitDate ?? '-'}</span>
+                </div>
+                {!!elder.tags?.length && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {elder.tags.slice(0, 3).map((tag) => (
+                      <span key={tag} className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+              {elder.id === selectedElderId ? (
+                <div className="space-y-2 px-1 pb-2">
+                  <ElderCalendar days={calendarDays} elders={elders} selectedDate={selectedDate} onSelectDate={selectDate} />
+                  <ElderSessionTree sessions={selectedSessions} selectedSessionId={selectedSessionId} onSelectSession={selectSession} />
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
       </div>
@@ -165,17 +230,25 @@ export default function Sidebar() {
                       relation: '家属',
                       phone: '待补充',
                     },
+                    tags: form.tags.split(',').map((item) => item.trim()).filter(Boolean),
                   });
                   setForm({
                     name: '',
                     age: '75',
                     livingStatus: '独居',
                     chronicDiseases: '高血压',
+                    tags: '新个案',
                   });
                 }}
               >
                 保存长者档案
               </button>
+              <input
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                placeholder="标签（逗号分隔）"
+                value={form.tags}
+                onChange={(event) => setForm((prev) => ({ ...prev, tags: event.target.value }))}
+              />
             </div>
           </div>
         </div>
