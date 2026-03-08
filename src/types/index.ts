@@ -1,4 +1,12 @@
 export type RiskLevel = 'high' | 'medium' | 'low';
+export type RecordingState =
+  | 'idle'
+  | 'recording'
+  | 'transcribing'
+  | 'extracting'
+  | 'completed'
+  | 'error';
+export type ToastType = 'success' | 'warning' | 'error' | 'info';
 
 export interface ElderProfile {
   id: string;
@@ -55,8 +63,29 @@ export interface VisitSession {
   elderId: string;
   date: string;
   duration: number; // in seconds
-  status: 'recording' | 'transcribing' | 'extracting' | 'completed' | 'error';
+  status: RecordingState;
   transcript: TranscriptSegment[];
   extractResult?: ExtractResult;
   report?: string;
+}
+
+export interface ToastMessage {
+  id: string;
+  type: ToastType;
+  title: string;
+  description?: string;
+}
+
+export interface AppSettings {
+  compactMode: boolean;
+  fontScale: number;
+  highContrast: boolean;
+  reducedMotion: boolean;
+  noiseReduction: boolean;
+  sampleRate: '16k' | '44.1k';
+  reportLanguage: 'zh-HK' | 'zh-HK+en';
+  reportTemplate: 'standard' | 'detailed';
+  useMock: boolean;
+  apiBaseUrl: string;
+  autoGenerateReport: boolean;
 }

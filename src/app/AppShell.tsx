@@ -1,10 +1,41 @@
 import Sidebar from '../features/cases/Sidebar';
 import TranscriptPane from '../features/transcript/TranscriptPane';
 import InsightPane from '../features/insights/InsightPane';
+import { Settings } from 'lucide-react';
+import { useEffect } from 'react';
+import { useAppStore } from '@/state/appStore';
 
 export default function AppShell() {
+  const {
+    state: { settings },
+    initialize,
+    openSettings,
+  } = useAppStore();
+
+  useEffect(() => {
+    void initialize();
+  }, [initialize]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === ',') {
+        event.preventDefault();
+        openSettings();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent('shortcut:focus-elder-search'));
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [openSettings]);
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900">
+    <div
+      className={`flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 ${settings.highContrast ? 'contrast-125' : ''}`}
+      style={{ fontSize: `${settings.fontScale}%` }}
+    >
       {/* Left Sidebar: Cases / Elders List */}
       <div className="w-80 border-r border-slate-200 bg-white shadow-sm z-10 flex flex-col flex-shrink-0">
         <Sidebar />
@@ -22,6 +53,13 @@ export default function AppShell() {
           <InsightPane />
         </div>
       </div>
+      <button
+        className="fixed bottom-4 right-4 z-20 rounded-full bg-slate-900 p-3 text-white shadow-lg hover:bg-slate-700"
+        onClick={openSettings}
+        aria-label="打开设置"
+      >
+        <Settings className="h-5 w-5" />
+      </button>
     </div>
   );
 }
