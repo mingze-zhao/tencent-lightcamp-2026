@@ -16,7 +16,9 @@ export default function AppShell() {
 
   useEffect(() => {
     void initialize();
-  }, [initialize]);
+    // Initialize once on mount; avoid re-running and resetting selected elder/session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

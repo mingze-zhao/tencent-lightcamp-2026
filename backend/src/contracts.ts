@@ -1,27 +1,8 @@
 export type RiskLevel = 'high' | 'medium' | 'low';
-export type AppMode = 'demo' | 'live';
-export type BodyPart =
-  | 'head'
-  | 'chest'
-  | 'abdomen'
-  | 'left_arm'
-  | 'right_arm'
-  | 'left_fingers'
-  | 'right_fingers'
-  | 'left_leg'
-  | 'right_leg'
-  | 'left_toes'
-  | 'right_toes'
-  | 'back';
+export type RecordingState = 'idle' | 'recording' | 'transcribing' | 'extracting' | 'completed' | 'error';
+export type Speaker = 'social_worker' | 'elder';
 export type BodyFindingStatus = 'new' | 'ongoing' | 'resolved';
-export type RecordingState =
-  | 'idle'
-  | 'recording'
-  | 'transcribing'
-  | 'extracting'
-  | 'completed'
-  | 'error';
-export type ToastType = 'success' | 'warning' | 'error' | 'info';
+export type BodyViewSide = 'front' | 'back';
 
 export interface ElderProfile {
   id: string;
@@ -46,18 +27,10 @@ export interface TranscriptSegment {
   id: string;
   startTime: number;
   endTime: number;
-  speaker: 'social_worker' | 'elder';
+  speaker: Speaker;
   text: string;
-  keywords?: string[]; // keywords that map to insights
   risk?: RiskLevel;
-}
-
-export interface ExtractDimension {
-  summary: string;
-  risk: RiskLevel;
-  details?: string[];
-  /** 对应转写段落 id，用于左右联动定位 */
-  sourceSegmentIds?: string[];
+  keywords?: string[];
 }
 
 export interface SourceRef {
@@ -79,23 +52,24 @@ export interface InsightBlock {
 
 export interface BodyFinding {
   id: string;
-  part: BodyPart;
-  viewSide?: 'front' | 'back';
+  part: string;
   label: string;
   status: BodyFindingStatus;
   risk: RiskLevel;
   sourceRefIds: string[];
+  viewSide?: BodyViewSide;
 }
 
-export interface BodyMapSnapshot {
-  sessionId: string;
-  date: string;
-  findings: BodyFinding[];
+export interface ExtractDimension {
+  summary: string;
+  risk: RiskLevel;
+  details?: string[];
+  sourceSegmentIds?: string[];
 }
 
 export interface ExtractResult {
   medication: ExtractDimension;
-  symptoms: Array<{ description: string; risk: RiskLevel; sourceSegmentIds?: string[] }>;
+  symptoms: Array<{ id?: string; description: string; risk: RiskLevel; sourceSegmentIds?: string[] }>;
   diet: ExtractDimension;
   emotion: ExtractDimension;
   adl: ExtractDimension;
@@ -105,13 +79,10 @@ export interface ExtractResult {
     content: string;
     status: 'pending' | 'in_progress' | 'completed';
     priority: RiskLevel;
-    /** 对应转写段落 id，用于从待办跳转到转写 */
     sourceSegmentIds?: string[];
   }>;
   warnings: string[];
-  /** 每个预警对应的转写段落 id 列表，与 warnings 同序 */
   warningSegmentIds?: string[][];
-  /** 结构化块（用于右侧生成式块渲染） */
   insightBlocks?: InsightBlock[];
 }
 
@@ -119,12 +90,16 @@ export interface VisitSession {
   id: string;
   elderId: string;
   date: string;
-  duration: number; // in seconds
+  duration: number;
   status: RecordingState;
   transcript: TranscriptSegment[];
   sourceRefs?: SourceRef[];
   extractResult?: ExtractResult;
-  bodyMapSnapshot?: BodyMapSnapshot;
+  bodyMapSnapshot?: {
+    sessionId: string;
+    date: string;
+    findings: BodyFinding[];
+  };
   report?: string;
 }
 
@@ -134,37 +109,15 @@ export interface CalendarDay {
 }
 
 export interface CommunityBodyStat {
-  part: BodyPart;
+  part: string;
   issueCount: number;
   elderCount: number;
   rate: number;
-  activeCount?: number;
-  resolvedCount?: number;
+  activeCount: number;
+  resolvedCount: number;
 }
 
 export interface DemoDataset {
   elders: ElderProfile[];
   sessionsByElder: Record<string, VisitSession[]>;
-}
-
-export interface ToastMessage {
-  id: string;
-  type: ToastType;
-  title: string;
-  description?: string;
-}
-
-export interface AppSettings {
-  compactMode: boolean;
-  fontScale: number;
-  highContrast: boolean;
-  reducedMotion: boolean;
-  noiseReduction: boolean;
-  sampleRate: '16k' | '44.1k';
-  reportLanguage: 'zh-HK' | 'zh-HK+en';
-  reportTemplate: 'standard' | 'detailed';
-  useMock: boolean;
-  apiBaseUrl: string;
-  autoGenerateReport: boolean;
-  mode: AppMode;
 }

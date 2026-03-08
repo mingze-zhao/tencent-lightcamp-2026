@@ -81,7 +81,7 @@ const defaultSettings: AppSettings = {
   reportLanguage: 'zh-HK',
   reportTemplate: 'standard',
   useMock: true,
-  apiBaseUrl: '',
+  apiBaseUrl: 'http://localhost:8787',
   autoGenerateReport: false,
   mode: 'demo',
 };
@@ -239,8 +239,8 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
     [state.settings.apiBaseUrl, state.settings.useMock]
   );
 
-  const refreshCommunityStats = useCallback(async () => {
-    const stats = await ApiService.getCommunityBodyStats(resolveCtx());
+  const refreshCommunityStats = useCallback(async (override?: { useMock: boolean; apiBaseUrl: string }) => {
+    const stats = await ApiService.getCommunityBodyStats(resolveCtx(override));
     dispatch({ type: 'setCommunityStats', payload: stats });
   }, [resolveCtx]);
 
@@ -286,7 +286,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       } else {
         dispatch({ type: 'setStatus', payload: 'ready' });
       }
-      await refreshCommunityStats();
+      await refreshCommunityStats(override);
     } catch (error) {
       dispatch({ type: 'setStatus', payload: 'error' });
       handleApiError(error);
@@ -360,12 +360,10 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       try {
         const appended = await ApiService.appendTranscriptSegment(state.selectedSession.id, segmentText, resolveCtx());
         if (!appended) return;
-        const incremental = await LLMAdapter.generateIncremental(
-          state.selectedSession,
-          appended.id,
-          appended.text,
-          state.settings.mode
-        );
+        const incremental =
+          state.settings.mode === 'live'
+            ? await ApiService.incrementalExtract(state.selectedSession.id, appended.id, appended.text, resolveCtx())
+            : await LLMAdapter.generateIncremental(state.selectedSession, appended.id, appended.text, state.settings.mode);
         const next: VisitSession = {
           ...state.selectedSession,
           transcript: [...state.selectedSession.transcript, appended],
@@ -452,8 +450,10 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       const merged = { ...state.settings, ...settings };
       if (merged.mode === 'demo') {
         merged.useMock = true;
+      } else if (merged.mode === 'live') {
+        merged.useMock = false;
       }
-      dispatch({ type: 'mergeSettings', payload: settings });
+      dispatch({ type: 'mergeSettings', payload: merged });
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       pushToast({ type: 'success', title: '设置已保存', description: '新设置已生效。' });
     },

@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum RiskLevel {
+  high
+  medium
+  low
+}
+
+enum RecordingState {
+  idle
+  recording
+  transcribing
+  extracting
+  completed
+  error
+}
+
+enum Speaker {
+  social_worker
+  elder
+}
+
+enum BodyViewSide {
+  front
+  back
+}
+
+enum BodyFindingStatus {
+  new
+  ongoing
+  resolved
+}
+
+enum InsightBlockType {
+  warning
+  medication
+  symptom
+  emotion
+  social
+  diet
+  adl
+  action_item
+}
+
+enum ActionItemStatus {
+  pending
+  in_progress
+  completed
+}
+
+model Elder {
+  id                    String    @id
+  name                  String
+  age                   Int
+  gender                String
+  address               String
+  contactNumber         String
+  livingStatus          String
+  chronicDiseases       Json
+  emergencyContactName  String
+  emergencyContactPhone String
+  emergencyContactRel   String
+  overallRisk           RiskLevel @default(low)
+  lastVisitDate         DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  tags     ElderTag[]
+  sessions Session[]
+
+  @@map("elders")
+}
+
+model ElderTag {
+  id      String @id
+  elderId String
+  tag     String
+
+  elder Elder @relation(fields: [elderId], references: [id], onDelete: Cascade)
+
+  @@unique([elderId, tag])
+  @@map("elder_tags")
+}
+
+model Session {
+  id       String         @id
+  elderId  String
+  date     DateTime
+  duration Int
+  status   RecordingState @default(idle)
+  report   String?
+
+  elder            Elder                    @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  transcript       TranscriptSegment[]
+  sourceRefs       SourceRef[]
+  dimensions       SessionDimension[]
+  symptoms         Symptom[]
+  insightBlocks    InsightBlock[]
+  warnings         Warning[]
+  actionItems      ActionItem[]
+  bodyFindings     BodyFinding[]
+  appendedSegments AppendedSegmentLog[]
+
+  @@index([elderId, date])
+  @@map("sessions")
+}
+
+model TranscriptSegment {
+  id        String    @id
+  sessionId String
+  startTime Int
+  endTime   Int
+  speaker   Speaker
+  text      String
+  risk      RiskLevel?
+  keywords  Json?
+
+  session Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  refs    SourceRef[]
+
+  @@index([sessionId, startTime])
+  @@map("transcript_segments")
+}
+
+model SourceRef {
+  id        String @id
+  sessionId String
+  segmentId String
+  startChar Int
+  endChar   Int
+  text      String
+
+  session            Session                @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  segment            TranscriptSegment      @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  insightBlockLinks  InsightBlockSourceRef[]
+  warningLinks       WarningSourceRef[]
+  actionItemLinks    ActionItemSourceRef[]
+  bodyFindingLinks   BodyFindingSourceRef[]
+
+  @@index([sessionId])
+  @@index([segmentId])
+  @@map("source_refs")
+}
+
+model SessionDimension {
+  id               String    @id
+  sessionId        String
+  dimension        String
+  summary          String
+  risk             RiskLevel
+  details          Json?
+  sourceSegmentIds Json?
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, dimension])
+  @@map("session_dimensions")
+}
+
+model Symptom {
+  id               String    @id
+  sessionId        String
+  description      String
+  risk             RiskLevel
+  sourceSegmentIds Json?
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("symptoms")
+}
+
+model InsightBlock {
+  id        String           @id
+  sessionId String
+  title     String
+  type      InsightBlockType
+  risk      RiskLevel
+  summary   String
+
+  session    Session                @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sourceRefs InsightBlockSourceRef[]
+
+  @@index([sessionId])
+  @@map("insight_blocks")
+}
+
+model InsightBlockSourceRef {
+  id            String @id
+  insightBlockId String
+  sourceRefId    String
+
+  insightBlock InsightBlock @relation(fields: [insightBlockId], references: [id], onDelete: Cascade)
+  sourceRef    SourceRef    @relation(fields: [sourceRefId], references: [id], onDelete: Cascade)
+
+  @@unique([insightBlockId, sourceRefId])
+  @@map("insight_block_source_refs")
+}
+
+model Warning {
+  id        String    @id
+  sessionId String
+  content   String
+  severity  RiskLevel
+  order     Int
+
+  session    Session            @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sourceRefs WarningSourceRef[]
+
+  @@index([sessionId, order])
+  @@map("warnings")
+}
+
+model WarningSourceRef {
+  id          String @id
+  warningId   String
+  sourceRefId String
+
+  warning   Warning   @relation(fields: [warningId], references: [id], onDelete: Cascade)
+  sourceRef SourceRef @relation(fields: [sourceRefId], references: [id], onDelete: Cascade)
+
+  @@unique([warningId, sourceRefId])
+  @@map("warning_source_refs")
+}
+
+model ActionItem {
+  id        String           @id
+  sessionId String
+  content   String
+  priority  RiskLevel
+  status    ActionItemStatus @default(pending)
+  order     Int
+
+  session    Session               @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sourceRefs ActionItemSourceRef[]
+
+  @@index([sessionId, order])
+  @@map("action_items")
+}
+
+model ActionItemSourceRef {
+  id           String @id
+  actionItemId String
+  sourceRefId  String
+
+  actionItem ActionItem @relation(fields: [actionItemId], references: [id], onDelete: Cascade)
+  sourceRef  SourceRef   @relation(fields: [sourceRefId], references: [id], onDelete: Cascade)
+
+  @@unique([actionItemId, sourceRefId])
+  @@map("action_item_source_refs")
+}
+
+model BodyFinding {
+  id        String            @id
+  sessionId String
+  viewSide  BodyViewSide      @default(front)
+  bodyPart  String
+  label     String
+  status    BodyFindingStatus
+  risk      RiskLevel
+  order     Int
+
+  session    Session               @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sourceRefs BodyFindingSourceRef[]
+
+  @@index([sessionId, viewSide, bodyPart])
+  @@map("body_findings")
+}
+
+model BodyFindingSourceRef {
+  id            String @id
+  bodyFindingId String
+  sourceRefId   String
+
+  bodyFinding BodyFinding @relation(fields: [bodyFindingId], references: [id], onDelete: Cascade)
+  sourceRef   SourceRef    @relation(fields: [sourceRefId], references: [id], onDelete: Cascade)
+
+  @@unique([bodyFindingId, sourceRefId])
+  @@map("body_finding_source_refs")
+}
+
+model AppendedSegmentLog {
+  id        String   @id
+  sessionId String
+  text      String
+  createdAt DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@map("appended_segment_logs")
+}

@@ -11,7 +11,7 @@
 - **左侧**：家访录音转写文本，支持说话人区分与风险关键词高亮（编辑器式呈现）。
 - **右侧**：结构化洞察看板 — 用药 / 症状 / 情绪 / 社交等维度卡片、高风险预警、待跟进事项与报告预览。
 
-本仓库为**前端 Demo**（P2 高保真界面），当前使用 Mock 数据演示完整流程，后续可对接粤语 ASR 与 Agent 接口。
+本仓库现在包含 **前端 + Node API + Prisma + SQLite**，支持演示模式和数据库实机模式两套链路。
 
 ## 当前可用交互范围（已升级）
 
@@ -53,6 +53,24 @@ npm run build
 npm run preview
 ```
 
+### 启动数据库后端（实机模式）
+
+```bash
+# 进入后端目录
+cd backend
+
+# 安装依赖
+npm install
+
+# 生成 Prisma Client + 执行迁移 + 灌入 seed
+npx prisma migrate dev --name init
+
+# 启动 API（默认 http://localhost:8787）
+npm run dev
+```
+
+前端设置里把运行模式切到 `live`，并设置 `API Base URL=http://localhost:8787`，即可切到数据库驱动。
+
 ---
 
 ## 项目结构（简要）
@@ -79,6 +97,152 @@ src/
 - 当前默认是 **演示模式**：无需后端即可体验多长者、多采访、日历、短语级联动、人体图与社区统计。
 - 切到 **实机模式** 后，可接入真实 API/LLM；若未配置会弹出 `API 未接入` 提示（占位行为）。
 - 路演时可参考根目录 `demo-script.md` 中的场景与话术进行展示。
+
+---
+
+## 数据库字段说明（Prisma / SQLite）
+
+核心表（与前后端字段对齐）：
+
+- `elders`: 长者主档（基本信息、慢病、风险、最近家访日期）
+- `elder_tags`: 标签表（支持姓名/标签搜索）
+- `sessions`: 家访会话（日期、时长、状态、报告）
+- `transcript_segments`: 转写分句
+- `source_refs`: 短语级锚点（segment + char range）
+- `session_dimensions`: medication/diet/emotion/adl/social_support 摘要
+- `symptoms`: 症状项
+- `insight_blocks` + `insight_block_source_refs`: 右侧结构化块及其原文引用
+- `warnings` + `warning_source_refs`: 预警及引用
+- `action_items` + `action_item_source_refs`: 跟进项及引用
+- `body_findings` + `body_finding_source_refs`: 人体分区问题（front/back + new/ongoing/resolved）
+- `appended_segment_logs`: 增量句子日志
+
+数据库 schema 文件：`backend/prisma/schema.prisma`
+
+---
+
+## Agent 可写入 JSON 合约样例
+
+以下样例可直接用于 `POST /api/ingest/json`（一次写入 elders + sessions）。
+
+### elder 样例
+
+```json
+{
+  "id": "elder-1001",
+  "name": "王婆婆",
+  "age": 84,
+  "gender": "F",
+  "address": "深水埗",
+  "contactNumber": "23334444",
+  "livingStatus": "独居",
+  "chronicDiseases": ["高血压"],
+  "emergencyContact": { "name": "王小强", "relation": "儿子", "phone": "98887777" },
+  "tags": ["独居", "高血压", "跌倒风险"],
+  "lastVisitDate": "2026-03-08",
+  "overallRisk": "medium"
+}
+```
+
+### session + transcript + source_ref + insight_block + body_finding 样例
+
+```json
+{
+  "id": "session-1001-1",
+  "elderId": "elder-1001",
+  "date": "2026-03-08",
+  "duration": 420,
+  "status": "completed",
+  "transcript": [
+    { "id": "seg-1", "startTime": 0, "endTime": 6, "speaker": "elder", "text": "最近右脚肿，行得慢。", "risk": "medium" }
+  ],
+  "sourceRefs": [
+    { "id": "sr-1001", "segmentId": "seg-1", "startChar": 2, "endChar": 10, "text": "右脚肿，行得慢" }
+  ],
+  "extractResult": {
+    "medication": { "summary": "按时服药。", "risk": "low" },
+    "symptoms": [{ "id": "sym-1", "description": "右下肢肿胀", "risk": "medium", "sourceSegmentIds": ["seg-1"] }],
+    "diet": { "summary": "正常", "risk": "low" },
+    "emotion": { "summary": "平稳", "risk": "low" },
+    "adl": { "summary": "步行减慢", "risk": "medium", "sourceSegmentIds": ["seg-1"] },
+    "social_support": { "summary": "偶有家属探访", "risk": "low" },
+    "warnings": ["右下肢持续肿胀需跟进"],
+    "warningSegmentIds": [["seg-1"]],
+    "action_items": [
+      { "id": "act-1", "content": "3天后复查水肿", "status": "pending", "priority": "medium", "sourceSegmentIds": ["seg-1"] }
+    ],
+    "insightBlocks": [
+      { "id": "ib-1001", "title": "身体症状", "type": "symptom", "risk": "medium", "summary": "右下肢肿胀", "sourceRefIds": ["sr-1001"] }
+    ]
+  },
+  "bodyMapSnapshot": {
+    "sessionId": "session-1001-1",
+    "date": "2026-03-08",
+    "findings": [
+      {
+        "id": "bf-1001",
+        "part": "right_leg",
+        "viewSide": "front",
+        "label": "下肢肿胀",
+        "status": "ongoing",
+        "risk": "medium",
+        "sourceRefIds": ["sr-1001"]
+      }
+    ]
+  },
+  "report": "建议继续监测下肢肿胀并安排门诊复查。"
+}
+```
+
+### `POST /api/ingest/json` 请求样例
+
+```json
+{
+  "elders": [
+    {
+      "id": "elder-1001",
+      "name": "王婆婆",
+      "age": 84,
+      "gender": "F",
+      "address": "深水埗",
+      "contactNumber": "23334444",
+      "livingStatus": "独居",
+      "chronicDiseases": ["高血压"],
+      "emergencyContact": { "name": "王小强", "relation": "儿子", "phone": "98887777" },
+      "tags": ["独居", "高血压"],
+      "lastVisitDate": "2026-03-08",
+      "overallRisk": "medium"
+    }
+  ],
+  "sessionsByElder": {
+    "elder-1001": [
+      {
+        "id": "session-1001-1",
+        "elderId": "elder-1001",
+        "date": "2026-03-08",
+        "duration": 420,
+        "status": "completed",
+        "transcript": [{ "id": "seg-1", "startTime": 0, "endTime": 6, "speaker": "elder", "text": "最近右脚肿，行得慢。", "risk": "medium" }],
+        "sourceRefs": [{ "id": "sr-1001", "segmentId": "seg-1", "startChar": 2, "endChar": 10, "text": "右脚肿，行得慢" }],
+        "extractResult": {
+          "medication": { "summary": "按时服药。", "risk": "low" },
+          "symptoms": [{ "description": "右下肢肿胀", "risk": "medium", "sourceSegmentIds": ["seg-1"] }],
+          "diet": { "summary": "正常", "risk": "low" },
+          "emotion": { "summary": "平稳", "risk": "low" },
+          "adl": { "summary": "步行减慢", "risk": "medium", "sourceSegmentIds": ["seg-1"] },
+          "social_support": { "summary": "偶有家属探访", "risk": "low" },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [],
+          "insightBlocks": []
+        },
+        "bodyMapSnapshot": { "sessionId": "session-1001-1", "date": "2026-03-08", "findings": [] },
+        "report": "示例报告"
+      }
+    ]
+  }
+}
+```
 
 ---
 

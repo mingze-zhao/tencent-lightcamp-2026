@@ -62,6 +62,18 @@ export default function Sidebar() {
   );
   const selectedSessions = selectedElderId ? sessionsByElder[selectedElderId] ?? [] : [];
 
+  const onSelectCalendarDate = async (date: string) => {
+    const day = calendarDays.find((item) => item.date === date);
+    if (!day?.elderIds.length) return;
+    if (selectedElderId && day.elderIds.includes(selectedElderId)) {
+      selectDate(date);
+      return;
+    }
+    const elderId = day.elderIds[0];
+    await selectElder(elderId);
+    selectDate(date);
+  };
+
   return (
     <div className="relative flex h-full flex-col">
       <div className="p-4 border-b border-slate-200">
@@ -109,7 +121,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className={`p-2 ${settings.compactMode ? 'space-y-0.5' : 'space-y-1'}`}>
           {filteredElders.length === 0 ? (
             <div className="rounded-lg border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500">
@@ -153,7 +165,6 @@ export default function Sidebar() {
               </motion.div>
               {elder.id === selectedElderId ? (
                 <div className="space-y-2 px-1 pb-2">
-                  <ElderCalendar days={calendarDays} elders={elders} selectedDate={selectedDate} onSelectDate={selectDate} />
                   <ElderSessionTree sessions={selectedSessions} selectedSessionId={selectedSessionId} onSelectSession={selectSession} />
                 </div>
               ) : null}
@@ -162,7 +173,17 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <div className="p-4 border-t border-slate-200">
+      <div className="border-t border-slate-200 bg-white p-3">
+        <ElderCalendar
+          days={calendarDays}
+          elders={elders}
+          selectedDate={selectedDate}
+          onSelectDate={(date) => {
+            void onSelectCalendarDate(date);
+          }}
+        />
+      </div>
+      <div className="border-t border-slate-200 bg-white p-4">
         <button
           onClick={openAddElder}
           aria-label="新增长者档案"

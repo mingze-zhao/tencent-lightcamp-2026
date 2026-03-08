@@ -1,5 +1,6 @@
 import { MockService } from './mock';
 import { CalendarDay, CommunityBodyStat, ElderProfile, ExtractResult, VisitSession } from '../types';
+import { IncrementalExtractResult } from './llmAdapter';
 
 export class ApiNotImplementedError extends Error {
   constructor(endpoint: string) {
@@ -19,6 +20,15 @@ const notImplemented = (endpoint: string): never => {
   throw new ApiNotImplementedError(endpoint);
 };
 
+const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
+  const response = await fetch(url, init);
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Request failed: ${response.status}`);
+  }
+  return response.json() as Promise<T>;
+};
+
 export const ApiService = {
   getElders: async (ctx: ApiContext): Promise<ElderProfile[]> => {
     if (ctx.useMock) return MockService.getElders();
@@ -32,46 +42,56 @@ export const ApiService = {
   getSession: async (elderId: string, ctx: ApiContext): Promise<VisitSession | null> => {
     if (ctx.useMock) return MockService.getSession(elderId);
     const baseUrl = resolveBaseUrl(ctx);
-    if (!baseUrl) return notImplemented('/api/sessions');
-    const response = await fetch(`${baseUrl}/api/sessions?elderId=${encodeURIComponent(elderId)}`);
-    if (!response.ok) throw new Error('加载会话失败');
-    return response.json();
+    if (!baseUrl) return notImplemented('/api/elders/:elderId/sessions');
+    const sessions = await fetchJson<VisitSession[]>(`${baseUrl}/api/elders/${encodeURIComponent(elderId)}/sessions`);
+    return sessions[0] ?? null;
   },
   getSessionsByElder: async (elderId: string, ctx: ApiContext): Promise<VisitSession[]> => {
     if (ctx.useMock) return MockService.getSessionsByElder(elderId);
     const baseUrl = resolveBaseUrl(ctx);
-    if (!baseUrl) return notImplemented('/api/sessions/by-elder');
-    const response = await fetch(`${baseUrl}/api/sessions/by-elder?elderId=${encodeURIComponent(elderId)}`);
-    if (!response.ok) throw new Error('加载会话列表失败');
-    return response.json();
+    if (!baseUrl) return notImplemented('/api/elders/:elderId/sessions');
+    return fetchJson<VisitSession[]>(`${baseUrl}/api/elders/${encodeURIComponent(elderId)}/sessions`);
   },
   getCalendarDays: async (ctx: ApiContext): Promise<CalendarDay[]> => {
     if (ctx.useMock) return MockService.getCalendarDays();
     const baseUrl = resolveBaseUrl(ctx);
     if (!baseUrl) return notImplemented('/api/calendar');
-    const response = await fetch(`${baseUrl}/api/calendar`);
-    if (!response.ok) throw new Error('加载日历数据失败');
-    return response.json();
+    return fetchJson<CalendarDay[]>(`${baseUrl}/api/calendar`);
   },
   getCommunityBodyStats: async (ctx: ApiContext): Promise<CommunityBodyStat[]> => {
     if (ctx.useMock) return MockService.getCommunityBodyStats();
     const baseUrl = resolveBaseUrl(ctx);
-    if (!baseUrl) return notImplemented('/api/community/body-stats');
-    const response = await fetch(`${baseUrl}/api/community/body-stats`);
-    if (!response.ok) throw new Error('加载社区统计失败');
-    return response.json();
+    if (!baseUrl) return notImplemented('/api/community/body-heatmap');
+    return fetchJson<CommunityBodyStat[]>(`${baseUrl}/api/community/body-heatmap`);
   },
   appendTranscriptSegment: async (sessionId: string, segmentText: string, ctx: ApiContext) => {
     if (ctx.useMock) return MockService.appendTranscriptSegment(sessionId, segmentText);
     const baseUrl = resolveBaseUrl(ctx);
-    if (!baseUrl) return notImplemented('/api/transcript/append');
-    const response = await fetch(`${baseUrl}/api/transcript/append`, {
+    if (!baseUrl) return notImplemented('/api/sessions/:sessionId/transcript/append');
+    return fetchJson<VisitSession['transcript'][number]>(`${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/transcript/append`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, segmentText }),
+      body: JSON.stringify({ segmentText }),
     });
-    if (!response.ok) throw new Error('追加转写失败');
-    return response.json();
+  },
+
+  incrementalExtract: async (
+    sessionId: string,
+    segmentId: string,
+    segmentText: string,
+    ctx: ApiContext
+  ): Promise<IncrementalExtractResult> => {
+    if (ctx.useMock) return notImplemented('/mock/incremental-extract');
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/sessions/:sessionId/incremental-extract');
+    return fetchJson<IncrementalExtractResult>(
+      `${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/incremental-extract`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ segmentId, segmentText }),
+      }
+    );
   },
 
   transcribeAudio: async (_file: File, ctx: ApiContext): Promise<{ text: string }> => {
@@ -91,7 +111,13 @@ export const ApiService = {
 
   createElder: async (payload: Omit<ElderProfile, 'id'>, ctx: ApiContext): Promise<ElderProfile> => {
     if (ctx.useMock) return MockService.createElder(payload);
-    return notImplemented('/api/elder/create');
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/elders');
+    return fetchJson<ElderProfile>(`${baseUrl}/api/elders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
   },
 
   updateActionItem: async (
@@ -101,6 +127,15 @@ export const ApiService = {
     ctx: ApiContext
   ) => {
     if (ctx.useMock) return MockService.updateActionItem(sessionId, itemId, checked);
-    return notImplemented('/api/action-item/update');
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/sessions/:sessionId/action-items/:itemId');
+    return fetchJson<{ id: string; status: string }>(
+      `${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/action-items/${encodeURIComponent(itemId)}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checked }),
+      }
+    );
   },
 };
