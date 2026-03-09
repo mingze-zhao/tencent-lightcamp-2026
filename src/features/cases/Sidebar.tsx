@@ -2,7 +2,7 @@ import { Search, UserPlus, X, Tags } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '@/state/appStore';
-import type { ElderProfile } from '@/types';
+import type { DailySessionEntry, ElderProfile } from '@/types';
 import ElderSessionTree from './ElderSessionTree';
 import ElderCalendar from './ElderCalendar';
 
@@ -26,6 +26,7 @@ export default function Sidebar() {
     closeAddElder,
     addElder,
     updateElderFields,
+    fetchSessionsByDate,
   } = useAppStore();
   const [query, setQuery] = useState('');
   const [activeTag, setActiveTag] = useState<string>('');
@@ -36,6 +37,9 @@ export default function Sidebar() {
     chronicDiseases: '高血压',
     tags: '新个案',
   });
+  const [calendarExpandedDate, setCalendarExpandedDate] = useState<string | null>(null);
+  const [calendarDayItems, setCalendarDayItems] = useState<DailySessionEntry[]>([]);
+  const [calendarDayLoading, setCalendarDayLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -65,15 +69,19 @@ export default function Sidebar() {
   const selectedSessions = selectedElderId ? sessionsByElder[selectedElderId] ?? [] : [];
 
   const onSelectCalendarDate = async (date: string) => {
-    const day = calendarDays.find((item) => item.date === date);
-    if (!day?.elderIds.length) return;
-    if (selectedElderId && day.elderIds.includes(selectedElderId)) {
-      selectDate(date);
+    if (calendarExpandedDate === date) {
+      setCalendarExpandedDate(null);
+      setCalendarDayItems([]);
       return;
     }
-    const elderId = day.elderIds[0];
-    await selectElder(elderId);
-    selectDate(date);
+    setCalendarExpandedDate(date);
+    setCalendarDayLoading(true);
+    try {
+      const items = await fetchSessionsByDate(date);
+      setCalendarDayItems(items);
+    } finally {
+      setCalendarDayLoading(false);
+    }
   };
 
   return (
@@ -198,15 +206,30 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <div className="border-t border-slate-200 bg-white p-3">
-        <ElderCalendar
-          days={calendarDays}
-          elders={elders}
-          selectedDate={selectedDate}
-          onSelectDate={(date) => {
-            void onSelectCalendarDate(date);
-          }}
-        />
+      <div className="border-t border-slate-200 bg-white p-2">
+        <div className="max-h-[350px] overflow-y-auto pr-1">
+          <ElderCalendar
+            days={calendarDays}
+            elders={elders}
+            selectedDate={selectedDate}
+            expandedDate={calendarExpandedDate}
+            dayTimelineItems={calendarDayItems}
+            dayTimelineLoading={calendarDayLoading}
+            onCloseExpanded={() => {
+              setCalendarExpandedDate(null);
+              setCalendarDayItems([]);
+            }}
+            onPickDayTimelineItem={(item) => {
+              void selectElder(item.elderId).then(() => {
+                selectSession(item.sessionId);
+                selectDate(item.date);
+              });
+            }}
+            onSelectDate={(date) => {
+              void onSelectCalendarDate(date);
+            }}
+          />
+        </div>
       </div>
       <div className="border-t border-slate-200 bg-white p-4">
         <button

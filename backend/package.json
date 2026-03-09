@@ -10,6 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:seed": "tsx prisma/seed.ts",
+    "audit:dataflow": "tsx scripts/audit-dataflow.ts",
+    "simulate:pipeline": "tsx scripts/simulate-pipeline.ts",
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset --force"
   },

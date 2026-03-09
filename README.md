@@ -27,7 +27,7 @@
 - 编辑保存升级为**字段级乐观更新**：失败仅回滚当前字段，并给出字段路径提示。
 - 右侧结构化信息支持**新增/删除全覆盖**：warning / insight block / action item / body finding / dimension summary。
 - 转录区支持**长按句子 Quick Add**，可把该句（或选中文本）直接绑定为 sourceRef 并新增结构化条目。
-- 顶部新增**人员档案**页签，支持单人跨时间全量档案查看（时间轴 + 快照）。
+- 顶部新增**人员档案**页签，支持单人跨时间全量档案查看（时间轴 + 对比会话 + 正反人体图同屏 + 全量结构化 + 原始稿历史）。
 
 ---
 
@@ -286,6 +286,10 @@ DELETE /api/sessions/:sessionId/warnings/:warningIndex
 DELETE /api/sessions/:sessionId/action-items/:itemId
 DELETE /api/sessions/:sessionId/body-findings/:findingId
 DELETE /api/sessions/:sessionId/dimensions/:dimensionId
+
+# 人员档案查询增强
+GET /api/elders/:elderId/sessions?view=summary
+GET /api/sessions/:sessionId/full
 ```
 
 ## 数据流与 Prompt 文档

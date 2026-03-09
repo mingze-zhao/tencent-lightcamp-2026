@@ -119,27 +119,64 @@ export default function InsightPaneV2() {
                 </button>
               </div>
             ) : null}
-            <BodyMapPanel
-              findings={selectedSession.bodyMapSnapshot?.findings ?? []}
-              activeSourceRefId={activeSourceRefId}
-              isEditMode={isEditMode}
-              onSelectFinding={(finding) => {
-                const sourceId = finding.sourceRefIds[0];
-                if (!sourceId) return;
-                const source = sourceRefMap[sourceId];
-                if (!source) return;
-                setActiveSourceRef(source.id);
-                setActiveSegment(source.segmentId);
-              }}
-              onEditFinding={(findingId, patch) => {
-                if (!selectedSession) return;
-                updateBodyFindingFields(selectedSession.id, findingId, patch);
-              }}
-              onDeleteFinding={(findingId) => {
-                if (!selectedSession || !isEditMode) return;
-                void deleteStructuredItem(selectedSession.id, 'body_finding', findingId);
-              }}
-            />
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 text-sm font-semibold text-slate-800">人体图（正面/背面）</div>
+              <div className="grid gap-3 lg:grid-cols-2">
+                <BodyMapPanel
+                  title="正面"
+                  hideLegend
+                  fixedBodySide="anterior"
+                  findings={selectedSession.bodyMapSnapshot?.findings ?? []}
+                  activeSourceRefId={activeSourceRefId}
+                  isEditMode={isEditMode}
+                  onSelectFinding={(finding) => {
+                    const sourceId = finding.sourceRefIds[0];
+                    if (!sourceId) return;
+                    const source = sourceRefMap[sourceId];
+                    if (!source) return;
+                    setActiveSourceRef(source.id);
+                    setActiveSegment(source.segmentId);
+                  }}
+                  onEditFinding={(findingId, patch) => {
+                    if (!selectedSession) return;
+                    updateBodyFindingFields(selectedSession.id, findingId, patch);
+                  }}
+                  onDeleteFinding={(findingId) => {
+                    if (!selectedSession || !isEditMode) return;
+                    void deleteStructuredItem(selectedSession.id, 'body_finding', findingId);
+                  }}
+                />
+                <BodyMapPanel
+                  title="背面"
+                  hideLegend
+                  fixedBodySide="posterior"
+                  findings={selectedSession.bodyMapSnapshot?.findings ?? []}
+                  activeSourceRefId={activeSourceRefId}
+                  isEditMode={isEditMode}
+                  onSelectFinding={(finding) => {
+                    const sourceId = finding.sourceRefIds[0];
+                    if (!sourceId) return;
+                    const source = sourceRefMap[sourceId];
+                    if (!source) return;
+                    setActiveSourceRef(source.id);
+                    setActiveSegment(source.segmentId);
+                  }}
+                  onEditFinding={(findingId, patch) => {
+                    if (!selectedSession) return;
+                    updateBodyFindingFields(selectedSession.id, findingId, patch);
+                  }}
+                  onDeleteFinding={(findingId) => {
+                    if (!selectedSession || !isEditMode) return;
+                    void deleteStructuredItem(selectedSession.id, 'body_finding', findingId);
+                  }}
+                />
+              </div>
+              <div className="mt-3 flex gap-2 text-[10px] text-slate-600">
+                <span className="rounded bg-red-100 px-1.5 py-0.5">新发</span>
+                <span className="rounded bg-amber-100 px-1.5 py-0.5">持续</span>
+                <span className="rounded bg-emerald-100 px-1.5 py-0.5">痊愈</span>
+              </div>
+            </div>
 
             <motion.div ref={warningsRef} className="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2 font-semibold text-red-800">

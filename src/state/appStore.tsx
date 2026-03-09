@@ -13,7 +13,9 @@ import type {
   AppSettings,
   BodyFinding,
   CalendarDay,
+  CommunityDashboard,
   CommunityBodyStat,
+  DailySessionEntry,
   ElderProfile,
   RecordingState,
   StructuredItemType,
@@ -36,8 +38,13 @@ interface AppState {
   selectedDate?: string;
   selectedSession?: VisitSession;
   sessionsByElder: Record<string, VisitSession[]>;
+  archivePrimarySessionId?: string;
+  archiveCompareSessionId?: string;
+  archiveTranscriptKeyword: string;
+  archiveExpandedSessionIds: string[];
   calendarDays: CalendarDay[];
   communityBodyStats: CommunityBodyStat[];
+  communityDashboard?: CommunityDashboard;
   currentPage: PageKey;
   recordingState: RecordingState;
   recordingSeconds: number;
@@ -61,10 +68,15 @@ type AppAction =
   | { type: 'setSelectedElder'; payload?: string }
   | { type: 'setSelectedDate'; payload?: string }
   | { type: 'setSessionsByElder'; payload: { elderId: string; sessions: VisitSession[] } }
+  | { type: 'setArchivePrimarySessionId'; payload?: string }
+  | { type: 'setArchiveCompareSessionId'; payload?: string }
+  | { type: 'setArchiveTranscriptKeyword'; payload: string }
+  | { type: 'toggleArchiveExpandedSession'; payload: string }
   | { type: 'setCalendarDays'; payload: CalendarDay[] }
   | { type: 'setSelectedSession'; payload?: VisitSession }
   | { type: 'setSelectedSessionId'; payload?: string }
   | { type: 'setCommunityStats'; payload: CommunityBodyStat[] }
+  | { type: 'setCommunityDashboard'; payload?: CommunityDashboard }
   | { type: 'setCurrentPage'; payload: PageKey }
   | { type: 'setRecordingState'; payload: RecordingState }
   | { type: 'setRecordingSeconds'; payload: number }
@@ -112,8 +124,11 @@ const initialState: AppState = {
   status: 'idle',
   elders: [],
   sessionsByElder: {},
+  archiveTranscriptKeyword: '',
+  archiveExpandedSessionIds: [],
   calendarDays: [],
   communityBodyStats: [],
+  communityDashboard: undefined,
   currentPage: 'workbench',
   recordingState: 'idle',
   recordingSeconds: 0,
@@ -154,6 +169,18 @@ function reducer(state: AppState, action: AppAction): AppState {
           [action.payload.elderId]: action.payload.sessions,
         },
       };
+    case 'setArchivePrimarySessionId':
+      return { ...state, archivePrimarySessionId: action.payload };
+    case 'setArchiveCompareSessionId':
+      return { ...state, archiveCompareSessionId: action.payload };
+    case 'setArchiveTranscriptKeyword':
+      return { ...state, archiveTranscriptKeyword: action.payload };
+    case 'toggleArchiveExpandedSession': {
+      const set = new Set(state.archiveExpandedSessionIds);
+      if (set.has(action.payload)) set.delete(action.payload);
+      else set.add(action.payload);
+      return { ...state, archiveExpandedSessionIds: [...set] };
+    }
     case 'setCalendarDays':
       return { ...state, calendarDays: action.payload };
     case 'setSelectedSession':
@@ -162,6 +189,8 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, selectedSessionId: action.payload };
     case 'setCommunityStats':
       return { ...state, communityBodyStats: action.payload };
+    case 'setCommunityDashboard':
+      return { ...state, communityDashboard: action.payload };
     case 'setCurrentPage':
       return { ...state, currentPage: action.payload };
     case 'setRecordingState':
@@ -248,6 +277,11 @@ interface AppStoreValue {
   setActiveSegment: (segmentId?: string) => void;
   setActiveSourceRef: (sourceRefId?: string) => void;
   setCurrentPage: (page: PageKey) => void;
+  fetchSessionsByDate: (date: string) => Promise<DailySessionEntry[]>;
+  setArchivePrimarySession: (sessionId?: string) => void;
+  setArchiveCompareSession: (sessionId?: string) => void;
+  setArchiveTranscriptKeyword: (keyword: string) => void;
+  toggleArchiveExpandedSession: (sessionId: string) => void;
   updateElderFields: (elderId: string, patch: Partial<ElderProfile>) => void;
   updateTranscriptSegmentText: (sessionId: string, segmentId: string, text: string) => void;
   updateInsightBlockFields: (sessionId: string, blockId: string, patch: { title?: string; summary?: string }) => void;
@@ -332,8 +366,9 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
   );
 
   const refreshCommunityStats = useCallback(async (override?: { apiBaseUrl: string; showDemoData: boolean }) => {
-    const stats = await ApiService.getCommunityBodyStats(resolveCtx(override));
-    dispatch({ type: 'setCommunityStats', payload: stats });
+    const dashboard = await ApiService.getCommunityDashboard({ window: '90d', granularity: 'week' }, resolveCtx(override));
+    dispatch({ type: 'setCommunityDashboard', payload: dashboard });
+    dispatch({ type: 'setCommunityStats', payload: dashboard.bodyPartStats });
   }, [resolveCtx]);
 
   const selectElder = useCallback(
@@ -347,6 +382,8 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
         dispatch({ type: 'setSelectedSession', payload: next });
         dispatch({ type: 'setSelectedSessionId', payload: next?.id });
         dispatch({ type: 'setSelectedDate', payload: next?.date });
+        dispatch({ type: 'setArchivePrimarySessionId', payload: next?.id });
+        dispatch({ type: 'setArchiveCompareSessionId', payload: sessions.find((session) => session.id !== next?.id)?.id });
         dispatch({ type: 'setStatus', payload: 'ready' });
       } catch (error) {
         dispatch({ type: 'setStatus', payload: 'error' });
@@ -405,6 +442,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       dispatch({ type: 'setSelectedSessionId', payload: session.id });
       dispatch({ type: 'setSelectedDate', payload: session.date });
       dispatch({ type: 'setSelectedSession', payload: session });
+      dispatch({ type: 'setArchivePrimarySessionId', payload: session.id });
     },
     [state.selectedElderId, state.sessionsByElder]
   );
@@ -423,6 +461,27 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
 
   const setCurrentPage = useCallback((page: PageKey) => {
     dispatch({ type: 'setCurrentPage', payload: page });
+  }, []);
+
+  const fetchSessionsByDate = useCallback(
+    async (date: string) => ApiService.getSessionsByDate(date, resolveCtx()),
+    [resolveCtx]
+  );
+
+  const setArchivePrimarySession = useCallback((sessionId?: string) => {
+    dispatch({ type: 'setArchivePrimarySessionId', payload: sessionId });
+  }, []);
+
+  const setArchiveCompareSession = useCallback((sessionId?: string) => {
+    dispatch({ type: 'setArchiveCompareSessionId', payload: sessionId });
+  }, []);
+
+  const setArchiveTranscriptKeyword = useCallback((keyword: string) => {
+    dispatch({ type: 'setArchiveTranscriptKeyword', payload: keyword });
+  }, []);
+
+  const toggleArchiveExpandedSession = useCallback((sessionId: string) => {
+    dispatch({ type: 'toggleArchiveExpandedSession', payload: sessionId });
   }, []);
 
   const patchSelectedSession = useCallback(
@@ -1047,6 +1106,11 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       setActiveSegment,
       setActiveSourceRef,
       setCurrentPage,
+      fetchSessionsByDate,
+      setArchivePrimarySession,
+      setArchiveCompareSession,
+      setArchiveTranscriptKeyword,
+      toggleArchiveExpandedSession,
       updateElderFields,
       updateTranscriptSegmentText,
       updateInsightBlockFields,
@@ -1087,6 +1151,11 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       setActiveSegment,
       setActiveSourceRef,
       setCurrentPage,
+      fetchSessionsByDate,
+      setArchivePrimarySession,
+      setArchiveCompareSession,
+      setArchiveTranscriptKeyword,
+      toggleArchiveExpandedSession,
       setSearchKeyword,
       setEditMode,
       addStructuredItem,

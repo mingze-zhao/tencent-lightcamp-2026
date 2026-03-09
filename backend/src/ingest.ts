@@ -5,6 +5,49 @@ const inferViewSide = (part: string) => (part === 'back' ? 'back' : 'front');
 
 const baseDimensionOrder = ['medication', 'diet', 'emotion', 'adl', 'social_support'] as const;
 
+const transcriptPadBank = [
+  { speaker: 'social_worker' as const, text: '我再确认一下，你最近一周最困扰你的症状系咩？' },
+  { speaker: 'elder' as const, text: '主要都系活动时会辛苦啲，不过比之前有少少改善。' },
+  { speaker: 'social_worker' as const, text: '明白，我会帮你记录并同医生沟通，另外你自己有无做日常监测？' },
+  { speaker: 'elder' as const, text: '有，我而家会记低数据同感受，但有时都会漏一两次。' },
+  { speaker: 'social_worker' as const, text: '好，今日我哋一齐再定一个下周可执行嘅小目标。' },
+  { speaker: 'elder' as const, text: '可以，我想先由最容易做得到嘅开始。' },
+];
+
+function enrichTranscript(
+  sessionId: string,
+  transcript: Array<{
+    id: string;
+    startTime: number;
+    endTime: number;
+    speaker: 'social_worker' | 'elder';
+    text: string;
+    risk?: 'high' | 'medium' | 'low';
+    keywords?: string[];
+  }>
+) {
+  if (transcript.length >= 8) return transcript;
+  const extraNeeded = 8 - transcript.length;
+  const baseEnd = transcript.length ? transcript[transcript.length - 1].endTime : 0;
+  const startIndex = Math.abs(
+    [...sessionId].reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  ) % transcriptPadBank.length;
+  const extras = Array.from({ length: extraNeeded }, (_, index) => {
+    const line = transcriptPadBank[(startIndex + index) % transcriptPadBank.length];
+    const startTime = baseEnd + index * 7 + 1;
+    return {
+      id: `${sessionId}-extra-${index + 1}`,
+      startTime,
+      endTime: startTime + 6,
+      speaker: line.speaker,
+      text: line.text,
+      risk: line.speaker === 'elder' ? ('low' as const) : undefined,
+      keywords: undefined,
+    };
+  });
+  return [...transcript, ...extras];
+}
+
 export async function wipeAll(prisma: PrismaClient) {
   await prisma.$transaction([
     prisma.bodyFindingSourceRef.deleteMany(),
@@ -74,7 +117,8 @@ export async function ingestDataset(prisma: PrismaClient, dataset: DemoDataset) 
         },
       });
 
-      for (const segment of session.transcript) {
+      const enrichedTranscript = enrichTranscript(session.id, session.transcript);
+      for (const segment of enrichedTranscript) {
         await prisma.transcriptSegment.create({
           data: {
             id: segment.id,

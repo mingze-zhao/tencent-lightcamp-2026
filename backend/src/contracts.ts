@@ -93,6 +93,13 @@ export interface ExtractResult {
   }>;
   warnings: string[];
   warningSegmentIds?: string[][];
+  warningItems?: Array<{
+    id: string;
+    content: string;
+    severity: RiskLevel;
+    sourceRefIds?: string[];
+    sourceSegmentIds?: string[];
+  }>;
   insightBlocks?: InsightBlock[];
   dimensionSummaries?: DimensionSummaryItem[];
 }
@@ -115,6 +122,30 @@ export interface VisitSession {
   report?: string;
 }
 
+export interface SessionSummary {
+  id: string;
+  elderId: string;
+  date: string;
+  duration: number;
+  status: RecordingState;
+  ifDemo?: boolean;
+  warningCount: number;
+  actionItemCount: number;
+  bodyFindingCount: number;
+  hasReport: boolean;
+}
+
+export interface DailySessionEntry {
+  sessionId: string;
+  elderId: string;
+  elderName: string;
+  date: string;
+  duration: number;
+  warningCount: number;
+  bodyFindingCount: number;
+  actionItemCount: number;
+}
+
 export interface CalendarDay {
   date: string;
   elderIds: string[];
@@ -127,6 +158,94 @@ export interface CommunityBodyStat {
   rate: number;
   activeCount: number;
   resolvedCount: number;
+  topLabels?: { name: string; count: number }[];
+}
+
+export interface CommunityKpiSummary {
+  elderTotal: number;
+  highRiskElders: number;
+  mediumRiskElders: number;
+  lowRiskElders: number;
+  activeIssueElders: number;
+  resolvedIssueElders: number;
+  newIssueCount: number;
+  warningCount: number;
+  pendingActionCount: number;
+  completedActionCount: number;
+}
+
+export interface CommunityTrendPoint {
+  bucket: string;
+  highRiskElders: number;
+  mediumRiskElders: number;
+  lowRiskElders: number;
+  activeIssueElders: number;
+  warningCount: number;
+  resolvedCount: number;
+}
+
+export interface CommunityRegionStat {
+  region: string;
+  elderCount: number;
+  highRiskCount: number;
+  activeIssueCount: number;
+  warningCount: number;
+}
+
+export interface CommunityChronicStat {
+  disease: string;
+  elderCount: number;
+  highRiskCount: number;
+  activeIssueCount: number;
+}
+
+export interface CommunityPivotRow {
+  bucket: string;
+  region: string;
+  risk: RiskLevel;
+  chronicDisease: string;
+  bodyPart: string;
+  findingStatus: BodyFindingStatus | 'none';
+  dataScope: 'demo' | 'real';
+  elderCount: number;
+  sessionCount: number;
+  issueCount: number;
+  warningCount: number;
+  actionPendingCount: number;
+  actionCompletedCount: number;
+}
+
+export interface CommunityElderRow {
+  elderId: string;
+  elderName: string;
+  region: string;
+  risk: RiskLevel;
+  chronicDiseases: string[];
+  lastSessionDate?: string;
+  lastSessionId?: string;
+  activeIssueCount: number;
+  resolvedIssueCount: number;
+  warningCount: number;
+  pendingActionCount: number;
+  completedActionCount: number;
+  oldestUnresolvedDays: number;
+  involvedParts: string[];
+  dataScope: 'demo' | 'real' | 'mixed';
+}
+
+export interface CommunityDashboard {
+  window: '7d' | '30d' | '90d' | 'all';
+  granularity: 'day' | 'week' | 'month';
+  includeDemo: boolean;
+  generatedAt: string;
+  kpis: CommunityKpiSummary;
+  riskDistribution: Array<{ risk: RiskLevel; count: number }>;
+  trends: CommunityTrendPoint[];
+  regionStats: CommunityRegionStat[];
+  chronicStats: CommunityChronicStat[];
+  bodyPartStats: CommunityBodyStat[];
+  pivotRows: CommunityPivotRow[];
+  elderRows: CommunityElderRow[];
 }
 
 export interface DemoDataset {

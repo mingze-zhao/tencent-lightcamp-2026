@@ -1,205 +1,705 @@
 {
   "elders": [
     {
-      "id": "1",
+      "id": "e1",
+      "ifDemo": true,
       "name": "陈伯",
-      "age": 78,
+      "age": 79,
       "gender": "M",
       "address": "深水埗海丽邨",
       "contactNumber": "23456789",
       "livingStatus": "独居",
-      "chronicDiseases": ["高血压", "糖尿病"],
+      "chronicDiseases": ["高血压", "糖尿病", "慢性下肢水肿"],
       "emergencyContact": { "name": "陈小明", "relation": "儿子", "phone": "98765432" },
-      "tags": ["独居", "高血压", "用药依从", "高风险"],
-      "lastVisitDate": "2026-03-08",
+      "tags": ["独居", "高血压", "糖尿病", "用药依从", "高风险"],
+      "lastVisitDate": "2026-03-22",
       "overallRisk": "high"
     },
     {
-      "id": "2",
+      "id": "e2",
+      "ifDemo": true,
       "name": "李婆婆",
-      "age": 82,
+      "age": 83,
       "gender": "F",
       "address": "观塘丽阁邨",
       "contactNumber": "22334455",
       "livingStatus": "与配偶同住",
-      "chronicDiseases": ["骨关节炎"],
+      "chronicDiseases": ["骨关节炎", "失眠"],
       "emergencyContact": { "name": "王大文", "relation": "女儿", "phone": "91234567" },
-      "tags": ["膝关节", "慢性疼痛", "中风险"],
-      "lastVisitDate": "2026-03-06",
+      "tags": ["膝关节", "慢性疼痛", "睡眠", "中风险"],
+      "lastVisitDate": "2026-03-22",
       "overallRisk": "medium"
     },
     {
-      "id": "3",
+      "id": "e3",
+      "ifDemo": true,
       "name": "张叔",
-      "age": 71,
+      "age": 72,
       "gender": "M",
       "address": "黄大仙竹园邨",
       "contactNumber": "25667788",
       "livingStatus": "与子女同住",
       "chronicDiseases": ["慢阻肺", "高血压"],
       "emergencyContact": { "name": "张美玲", "relation": "女儿", "phone": "95552222" },
-      "tags": ["呼吸系统", "家庭支持", "低风险"],
-      "lastVisitDate": "2026-03-05",
-      "overallRisk": "low"
+      "tags": ["呼吸系统", "运动耐量", "家庭支持", "中风险"],
+      "lastVisitDate": "2026-03-22",
+      "overallRisk": "medium"
+    },
+    {
+      "id": "e4",
+      "ifDemo": true,
+      "name": "王姨",
+      "age": 76,
+      "gender": "F",
+      "address": "将军澳厚德邨",
+      "contactNumber": "26778899",
+      "livingStatus": "与子女同住",
+      "chronicDiseases": ["糖尿病", "周围神经病变"],
+      "emergencyContact": { "name": "黄志强", "relation": "儿子", "phone": "93334444" },
+      "tags": ["糖尿病足", "脚趾伤口", "血糖管理", "高风险"],
+      "lastVisitDate": "2026-03-22",
+      "overallRisk": "high"
+    },
+    {
+      "id": "e5",
+      "ifDemo": true,
+      "name": "何伯",
+      "age": 80,
+      "gender": "M",
+      "address": "荃湾福来邨",
+      "contactNumber": "29887766",
+      "livingStatus": "独居",
+      "chronicDiseases": ["慢性腰背痛", "轻度抑郁"],
+      "emergencyContact": { "name": "何婉儿", "relation": "女儿", "phone": "96665555" },
+      "tags": ["情绪", "独居", "腰背痛", "社交孤立"],
+      "lastVisitDate": "2026-03-22",
+      "overallRisk": "medium"
     }
   ],
   "sessionsByElder": {
-    "1": [
+    "e1": [
       {
-        "id": "session-1-1",
-        "elderId": "1",
+        "id": "session-e1-20260308",
+        "elderId": "e1",
+        "ifDemo": true,
         "date": "2026-03-08",
+        "duration": 420,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e1-0308-1", "startTime": 0, "endTime": 6, "speaker": "social_worker", "text": "陈伯，今个星期身体点样？有无特别唔舒服？" },
+          { "id": "seg-e1-0308-2", "startTime": 6, "endTime": 14, "speaker": "elder", "text": "对脚成日肿，夜晚仲会抽筋，行两层楼梯都好喘。", "risk": "medium", "keywords": ["脚肿", "抽筋", "气喘"] },
+          { "id": "seg-e1-0308-3", "startTime": 14, "endTime": 20, "speaker": "social_worker", "text": "降压药同糖尿药有无准时食？" },
+          { "id": "seg-e1-0308-4", "startTime": 20, "endTime": 30, "speaker": "elder", "text": "有两日忘记咗食降压药，血糖机都冇点量。", "risk": "high", "keywords": ["忘记食药", "血糖监测不足"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e1-0308-1", "segmentId": "seg-e1-0308-2", "startChar": 0, "endChar": 14, "text": "对脚成日肿，夜晚仲会抽筋" },
+          { "id": "sr-e1-0308-2", "segmentId": "seg-e1-0308-4", "startChar": 0, "endChar": 15, "text": "有两日忘记咗食降压药" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "存在漏服降压药，血糖监测执行不足。", "risk": "high", "sourceSegmentIds": ["seg-e1-0308-4"] },
+          "symptoms": [{ "description": "双下肢水肿伴夜间抽筋，活动后气促。", "risk": "medium", "sourceSegmentIds": ["seg-e1-0308-2"] }],
+          "diet": { "summary": "饮食偏咸，晚餐较重。", "risk": "medium" },
+          "emotion": { "summary": "情绪一般，担心病情反复。", "risk": "medium" },
+          "adl": { "summary": "可自理，但上下楼梯耐力下降。", "risk": "medium", "sourceSegmentIds": ["seg-e1-0308-2"] },
+          "social_support": { "summary": "独居，子女每周探访一次。", "risk": "medium" },
+          "warnings": ["连续漏服降压药并缺乏血糖监测"],
+          "warningSegmentIds": [["seg-e1-0308-4"]],
+          "action_items": [
+            { "id": "ai-e1-0308-1", "content": "建立服药提醒与血糖打卡表", "status": "pending", "priority": "high", "sourceSegmentIds": ["seg-e1-0308-4"] },
+            { "id": "ai-e1-0308-2", "content": "一周内安排门诊复查水肿", "status": "pending", "priority": "medium", "sourceSegmentIds": ["seg-e1-0308-2"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e1-0308-1", "title": "高风险用药依从", "type": "warning", "risk": "high", "summary": "两日漏服降压药且血糖监测不足。", "sourceRefIds": ["sr-e1-0308-2"] },
+            { "id": "ib-e1-0308-2", "title": "下肢症状", "type": "symptom", "risk": "medium", "summary": "双下肢水肿与夜间抽筋持续。", "sourceRefIds": ["sr-e1-0308-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e1-20260308",
+          "date": "2026-03-08",
+          "findings": [
+            { "id": "bf-e1-0308-1", "part": "left_leg", "label": "左下肢水肿", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-e1-0308-1"] },
+            { "id": "bf-e1-0308-2", "part": "right_leg", "label": "右下肢水肿", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-e1-0308-1"] }
+          ]
+        },
+        "report": "陈伯本次家访显示下肢水肿持续且出现漏服降压药，建议优先执行服药提醒并安排复诊。"
+      },
+      {
+        "id": "session-e1-20260315",
+        "elderId": "e1",
+        "ifDemo": true,
+        "date": "2026-03-15",
         "duration": 360,
         "status": "completed",
         "transcript": [
-          { "id": "1", "startTime": 0, "endTime": 5, "speaker": "social_worker", "text": "陈伯，今日点啊？身体有冇边度唔舒服？" },
-          { "id": "2", "startTime": 5, "endTime": 12, "speaker": "elder", "text": "唉，都系咁啦，最近对脚成日肿，行路都觉得重。", "risk": "medium", "keywords": ["脚肿"] },
-          { "id": "3", "startTime": 12, "endTime": 18, "speaker": "social_worker", "text": "脚肿？有冇按时食降压药啊？" },
-          { "id": "4", "startTime": 18, "endTime": 25, "speaker": "elder", "text": "降压药... 有时唔记得食，前两日好似停咗两日。", "risk": "high", "keywords": ["停咗两日"] },
-          { "id": "5", "startTime": 25, "endTime": 30, "speaker": "social_worker", "text": "咁唔得噶喎，药一定要日日食。" }
+          { "id": "seg-e1-0315-1", "startTime": 0, "endTime": 7, "speaker": "social_worker", "text": "上星期建议执行后，情况有无改善？" },
+          { "id": "seg-e1-0315-2", "startTime": 7, "endTime": 15, "speaker": "elder", "text": "食药好咗，脚肿减轻咗，不过右脚趾有少少麻。", "risk": "medium", "keywords": ["脚肿减轻", "脚趾麻"] },
+          { "id": "seg-e1-0315-3", "startTime": 15, "endTime": 24, "speaker": "elder", "text": "血糖有量，朝早多次都九点几。", "risk": "medium", "keywords": ["血糖偏高"] }
         ],
         "sourceRefs": [
-          { "id": "sr-1", "segmentId": "2", "startChar": 7, "endChar": 20, "text": "最近对脚成日肿，行路都觉得重" },
-          { "id": "sr-2", "segmentId": "4", "startChar": 0, "endChar": 18, "text": "有时唔记得食，前两日好似停咗两日" }
+          { "id": "sr-e1-0315-1", "segmentId": "seg-e1-0315-2", "startChar": 0, "endChar": 10, "text": "食药好咗，脚肿减轻咗" },
+          { "id": "sr-e1-0315-2", "segmentId": "seg-e1-0315-2", "startChar": 11, "endChar": 21, "text": "右脚趾有少少麻" }
         ],
         "extractResult": {
-          "medication": { "summary": "有时忘记食降压药，近期停药2天。", "risk": "high", "sourceSegmentIds": ["4"] },
-          "symptoms": [{ "description": "双下肢水肿明显，自觉行走沉重。", "risk": "medium", "sourceSegmentIds": ["2"] }],
-          "diet": { "summary": "胃口一般。", "risk": "low" },
-          "emotion": { "summary": "情绪平稳，少少叹气。", "risk": "low" },
-          "adl": { "summary": "行动受水肿影响，但可自理。", "risk": "medium", "sourceSegmentIds": ["2"] },
-          "social_support": { "summary": "独居，无提及子女探望。", "risk": "medium" },
-          "warnings": ["连续漏服降压药2天"],
-          "warningSegmentIds": [["4"]],
+          "medication": { "summary": "服药依从较上次明显改善。", "risk": "low", "sourceSegmentIds": ["seg-e1-0315-2"] },
+          "symptoms": [
+            { "description": "下肢水肿较前缓解。", "risk": "low", "sourceSegmentIds": ["seg-e1-0315-2"] },
+            { "description": "右脚趾麻木新发。", "risk": "medium", "sourceSegmentIds": ["seg-e1-0315-2"] }
+          ],
+          "diet": { "summary": "已减少咸食，但晚间仍有甜食摄入。", "risk": "medium" },
+          "emotion": { "summary": "愿意配合跟进，情绪较前稳定。", "risk": "low" },
+          "adl": { "summary": "步行能力略改善。", "risk": "low" },
+          "social_support": { "summary": "儿子电话提醒服药，支持增强。", "risk": "low" },
+          "warnings": ["空腹血糖持续偏高"],
+          "warningSegmentIds": [["seg-e1-0315-3"]],
           "action_items": [
-            { "id": "a1", "content": "联系门诊医生确认降压药服用方案", "status": "pending", "priority": "high", "sourceSegmentIds": ["4"] },
-            { "id": "a2", "content": "跟进下肢水肿情况，建议转介物理治疗", "status": "pending", "priority": "medium", "sourceSegmentIds": ["2"] }
+            { "id": "ai-e1-0315-1", "content": "继续记录7天血糖并带至门诊", "status": "pending", "priority": "medium", "sourceSegmentIds": ["seg-e1-0315-3"] }
           ],
           "insightBlocks": [
-            { "id": "ib-1", "title": "高风险预警", "type": "warning", "risk": "high", "summary": "连续漏服降压药2天", "sourceRefIds": ["sr-2"] },
-            { "id": "ib-2", "title": "身体症状", "type": "symptom", "risk": "medium", "summary": "双下肢水肿明显，行走沉重。", "sourceRefIds": ["sr-1"] }
+            { "id": "ib-e1-0315-1", "title": "症状变化", "type": "symptom", "risk": "medium", "summary": "水肿缓解但出现右脚趾麻木。", "sourceRefIds": ["sr-e1-0315-1", "sr-e1-0315-2"] }
           ]
         },
         "bodyMapSnapshot": {
-          "sessionId": "session-1-1",
-          "date": "2026-03-08",
+          "sessionId": "session-e1-20260315",
+          "date": "2026-03-15",
           "findings": [
-            { "id": "bf-1", "part": "left_leg", "label": "下肢水肿", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-1"] },
-            { "id": "bf-2", "part": "right_leg", "label": "下肢水肿", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-1"] }
+            { "id": "bf-e1-0315-1", "part": "left_leg", "label": "左下肢水肿减轻", "status": "resolved", "risk": "low", "sourceRefIds": ["sr-e1-0315-1"] },
+            { "id": "bf-e1-0315-2", "part": "right_leg", "label": "右下肢轻度水肿", "status": "ongoing", "risk": "low", "sourceRefIds": ["sr-e1-0315-1"] },
+            { "id": "bf-e1-0315-3", "part": "right_toes", "label": "右脚趾麻木", "status": "new", "risk": "medium", "sourceRefIds": ["sr-e1-0315-2"] }
           ]
         },
-        "report": "访谈日期: 2026年3月8日。个案陈伯近期双下肢水肿，且有漏服降压药，建议尽快复诊并加强服药提醒。"
+        "report": "陈伯本次显示依从性改善，水肿缓解，但出现右脚趾麻木及血糖偏高，需继续监测。"
       },
       {
-        "id": "session-1-2",
-        "elderId": "1",
-        "date": "2026-03-01",
+        "id": "session-e1-20260322",
+        "elderId": "e1",
+        "ifDemo": true,
+        "date": "2026-03-22",
+        "duration": 390,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e1-0322-1", "startTime": 0, "endTime": 8, "speaker": "social_worker", "text": "今个礼拜脚肿同脚趾麻有无再恶化？" },
+          { "id": "seg-e1-0322-2", "startTime": 8, "endTime": 16, "speaker": "elder", "text": "脚肿稳定，脚趾麻少咗，夜晚瞓得好返啲。", "risk": "low", "keywords": ["症状缓解"] },
+          { "id": "seg-e1-0322-3", "startTime": 16, "endTime": 24, "speaker": "elder", "text": "血糖仲有高低波动，但有每日记录。", "risk": "medium", "keywords": ["血糖波动"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e1-0322-1", "segmentId": "seg-e1-0322-2", "startChar": 0, "endChar": 15, "text": "脚肿稳定，脚趾麻少咗" },
+          { "id": "sr-e1-0322-2", "segmentId": "seg-e1-0322-3", "startChar": 0, "endChar": 12, "text": "血糖仲有高低波动" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "持续按时服药并坚持自我监测。", "risk": "low" },
+          "symptoms": [{ "description": "下肢症状总体稳定，麻木减轻。", "risk": "low", "sourceSegmentIds": ["seg-e1-0322-2"] }],
+          "diet": { "summary": "控制糖分较前改善。", "risk": "low" },
+          "emotion": { "summary": "睡眠改善，焦虑下降。", "risk": "low" },
+          "adl": { "summary": "活动耐力较前提升。", "risk": "low" },
+          "social_support": { "summary": "家庭电话支持持续。", "risk": "low" },
+          "warnings": ["血糖仍有波动需继续医学评估"],
+          "warningSegmentIds": [["seg-e1-0322-3"]],
+          "action_items": [
+            { "id": "ai-e1-0322-1", "content": "继续每周汇总血糖记录给门诊医生", "status": "pending", "priority": "medium", "sourceSegmentIds": ["seg-e1-0322-3"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e1-0322-1", "title": "阶段性改善", "type": "symptom", "risk": "low", "summary": "水肿与麻木较前缓解。", "sourceRefIds": ["sr-e1-0322-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e1-20260322",
+          "date": "2026-03-22",
+          "findings": [
+            { "id": "bf-e1-0322-1", "part": "right_leg", "label": "右下肢轻度水肿", "status": "ongoing", "risk": "low", "sourceRefIds": ["sr-e1-0322-1"] },
+            { "id": "bf-e1-0322-2", "part": "right_toes", "label": "右脚趾麻木减轻", "status": "resolved", "risk": "low", "sourceRefIds": ["sr-e1-0322-1"] }
+          ]
+        },
+        "report": "陈伯总体风险由高向中回落，建议维持依从行为并持续观察血糖波动。"
+      }
+    ],
+    "e2": [
+      {
+        "id": "session-e2-20260308",
+        "elderId": "e2",
+        "ifDemo": true,
+        "date": "2026-03-08",
         "duration": 330,
         "status": "completed",
         "transcript": [
-          { "id": "11", "startTime": 0, "endTime": 8, "speaker": "elder", "text": "最近脚都仲有少少肿，不过比上星期好。", "risk": "low" }
+          { "id": "seg-e2-0308-1", "startTime": 0, "endTime": 7, "speaker": "social_worker", "text": "李婆婆，膝头痛同睡眠情况最近点样？" },
+          { "id": "seg-e2-0308-2", "startTime": 7, "endTime": 16, "speaker": "elder", "text": "夜晚痛醒两三次，落雨天右膝会更痛。", "risk": "medium", "keywords": ["膝痛", "睡眠中断"] },
+          { "id": "seg-e2-0308-3", "startTime": 16, "endTime": 24, "speaker": "elder", "text": "止痛药食咗会好啲，但怕伤胃唔敢食多。", "risk": "medium", "keywords": ["止痛药顾虑"] }
         ],
         "sourceRefs": [
-          { "id": "sr-3", "segmentId": "11", "startChar": 2, "endChar": 13, "text": "脚都仲有少少肿" }
+          { "id": "sr-e2-0308-1", "segmentId": "seg-e2-0308-2", "startChar": 0, "endChar": 13, "text": "夜晚痛醒两三次，右膝更痛" }
         ],
         "extractResult": {
-          "medication": { "summary": "服药基本规律。", "risk": "low" },
-          "symptoms": [{ "description": "轻度下肢水肿。", "risk": "low", "sourceSegmentIds": ["11"] }],
-          "diet": { "summary": "饮食稳定。", "risk": "low" },
-          "emotion": { "summary": "情绪平稳。", "risk": "low" },
-          "adl": { "summary": "活动尚可。", "risk": "low" },
-          "social_support": { "summary": "偶有家属探访。", "risk": "low" },
+          "medication": { "summary": "止痛药使用不稳定，存在顾虑。", "risk": "medium", "sourceSegmentIds": ["seg-e2-0308-3"] },
+          "symptoms": [{ "description": "右膝关节疼痛影响睡眠。", "risk": "medium", "sourceSegmentIds": ["seg-e2-0308-2"] }],
+          "diet": { "summary": "饮食规律。", "risk": "low" },
+          "emotion": { "summary": "因夜间疼痛出现烦躁。", "risk": "medium" },
+          "adl": { "summary": "长距离步行受限。", "risk": "medium", "sourceSegmentIds": ["seg-e2-0308-2"] },
+          "social_support": { "summary": "与配偶同住，日常照顾稳定。", "risk": "low" },
           "warnings": [],
           "warningSegmentIds": [],
-          "action_items": [],
+          "action_items": [
+            { "id": "ai-e2-0308-1", "content": "记录疼痛-睡眠日记并带至门诊", "status": "pending", "priority": "medium", "sourceSegmentIds": ["seg-e2-0308-2"] }
+          ],
           "insightBlocks": [
-            { "id": "ib-3", "title": "身体症状", "type": "symptom", "risk": "low", "summary": "轻度下肢水肿。", "sourceRefIds": ["sr-3"] }
+            { "id": "ib-e2-0308-1", "title": "疼痛影响睡眠", "type": "symptom", "risk": "medium", "summary": "夜间疼痛导致反复醒来。", "sourceRefIds": ["sr-e2-0308-1"] }
           ]
         },
         "bodyMapSnapshot": {
-          "sessionId": "session-1-2",
-          "date": "2026-03-01",
+          "sessionId": "session-e2-20260308",
+          "date": "2026-03-08",
           "findings": [
-            { "id": "bf-3", "part": "left_leg", "label": "下肢水肿", "status": "new", "risk": "low", "sourceRefIds": ["sr-3"] }
+            { "id": "bf-e2-0308-1", "part": "right_leg", "label": "右膝关节疼痛", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-e2-0308-1"] }
           ]
         },
-        "report": "访谈日期: 2026年3月1日。个案下肢仍有轻度水肿，建议继续观察。"
-      }
-    ],
-    "2": [
+        "report": "李婆婆右膝疼痛持续并影响睡眠，建议加强疼痛监测与门诊评估。"
+      },
       {
-        "id": "session-2-1",
-        "elderId": "2",
-        "date": "2026-03-06",
-        "duration": 280,
-        "status": "completed",
-        "transcript": [
-          { "id": "21", "startTime": 0, "endTime": 5, "speaker": "social_worker", "text": "李婆婆，上次膝头痛而家点呀？" },
-          { "id": "22", "startTime": 5, "endTime": 12, "speaker": "elder", "text": "都系痛，不过比之前好啲，行得慢。", "risk": "medium", "keywords": ["膝头痛"] }
-        ],
-        "sourceRefs": [
-          { "id": "sr-4", "segmentId": "22", "startChar": 0, "endChar": 8, "text": "都系痛，不过比之前好啲" }
-        ],
-        "extractResult": {
-          "medication": { "summary": "止痛药依从性尚可。", "risk": "low" },
-          "symptoms": [{ "description": "膝关节疼痛持续但较上次缓解。", "risk": "medium", "sourceSegmentIds": ["22"] }],
-          "diet": { "summary": "饮食正常。", "risk": "low" },
-          "emotion": { "summary": "情绪稳定。", "risk": "low" },
-          "adl": { "summary": "步行速度较慢。", "risk": "medium", "sourceSegmentIds": ["22"] },
-          "social_support": { "summary": "与配偶同住，家庭支持较好。", "risk": "low" },
-          "warnings": [],
-          "warningSegmentIds": [],
-          "action_items": [{ "id": "b1", "content": "观察膝关节疼痛变化", "status": "pending", "priority": "medium", "sourceSegmentIds": ["22"] }],
-          "insightBlocks": [
-            { "id": "ib-4", "title": "身体症状", "type": "symptom", "risk": "medium", "summary": "膝关节疼痛持续但较上次缓解。", "sourceRefIds": ["sr-4"] }
-          ]
-        },
-        "bodyMapSnapshot": {
-          "sessionId": "session-2-1",
-          "date": "2026-03-06",
-          "findings": [
-            { "id": "bf-4", "part": "right_leg", "label": "膝关节疼痛", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-4"] }
-          ]
-        },
-        "report": "李婆婆膝痛持续但有改善，建议继续复查。"
-      }
-    ],
-    "3": [
-      {
-        "id": "session-3-1",
-        "elderId": "3",
-        "date": "2026-03-05",
+        "id": "session-e2-20260318",
+        "elderId": "e2",
+        "ifDemo": true,
+        "date": "2026-03-18",
         "duration": 300,
         "status": "completed",
         "transcript": [
-          { "id": "31", "startTime": 0, "endTime": 5, "speaker": "social_worker", "text": "张叔，最近气喘情况点样？" },
-          { "id": "32", "startTime": 5, "endTime": 12, "speaker": "elder", "text": "楼梯行快就会喘，平时还好。", "risk": "medium", "keywords": ["气喘"] }
+          { "id": "seg-e2-0318-1", "startTime": 0, "endTime": 7, "speaker": "social_worker", "text": "最近有冇做拉筋同热敷？" },
+          { "id": "seg-e2-0318-2", "startTime": 7, "endTime": 16, "speaker": "elder", "text": "有做，痛嘅次数少咗，但上楼梯仲系辛苦。", "risk": "low", "keywords": ["疼痛减少", "上楼梯困难"] },
+          { "id": "seg-e2-0318-3", "startTime": 16, "endTime": 24, "speaker": "elder", "text": "近排瞓得好咗，大概可以连瞓四个钟。", "risk": "low", "keywords": ["睡眠改善"] }
         ],
         "sourceRefs": [
-          { "id": "sr-5", "segmentId": "32", "startChar": 0, "endChar": 9, "text": "楼梯行快就会喘" }
+          { "id": "sr-e2-0318-1", "segmentId": "seg-e2-0318-2", "startChar": 0, "endChar": 12, "text": "痛嘅次数少咗" }
         ],
         "extractResult": {
-          "medication": { "summary": "吸入药使用规律。", "risk": "low" },
-          "symptoms": [{ "description": "运动后气喘。", "risk": "medium", "sourceSegmentIds": ["32"] }],
-          "diet": { "summary": "饮食规律。", "risk": "low" },
-          "emotion": { "summary": "对康复有信心。", "risk": "low" },
-          "adl": { "summary": "可自理，体力一般。", "risk": "low" },
-          "social_support": { "summary": "与子女同住，照护充分。", "risk": "low" },
+          "medication": { "summary": "止痛药按需使用，依从度较前改善。", "risk": "low" },
+          "symptoms": [{ "description": "疼痛频率下降，但上下楼仍受限。", "risk": "low", "sourceSegmentIds": ["seg-e2-0318-2"] }],
+          "diet": { "summary": "饮食稳定。", "risk": "low" },
+          "emotion": { "summary": "睡眠改善后心情更稳定。", "risk": "low" },
+          "adl": { "summary": "上楼梯仍需扶手。", "risk": "medium", "sourceSegmentIds": ["seg-e2-0318-2"] },
+          "social_support": { "summary": "配偶陪同复健执行良好。", "risk": "low" },
           "warnings": [],
           "warningSegmentIds": [],
-          "action_items": [{ "id": "c1", "content": "下次复诊前记录气喘触发场景", "status": "pending", "priority": "low", "sourceSegmentIds": ["32"] }],
+          "action_items": [
+            { "id": "ai-e2-0318-1", "content": "继续每晚热敷与腿部肌力训练", "status": "pending", "priority": "low", "sourceSegmentIds": ["seg-e2-0318-2"] }
+          ],
           "insightBlocks": [
-            { "id": "ib-5", "title": "身体症状", "type": "symptom", "risk": "medium", "summary": "运动后气喘。", "sourceRefIds": ["sr-5"] }
+            { "id": "ib-e2-0318-1", "title": "功能恢复中", "type": "adl", "risk": "low", "summary": "疼痛次数减少，活动功能逐步恢复。", "sourceRefIds": ["sr-e2-0318-1"] }
           ]
         },
         "bodyMapSnapshot": {
-          "sessionId": "session-3-1",
-          "date": "2026-03-05",
+          "sessionId": "session-e2-20260318",
+          "date": "2026-03-18",
           "findings": [
-            { "id": "bf-5", "part": "chest", "label": "活动后气喘", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-5"] }
+            { "id": "bf-e2-0318-1", "part": "right_leg", "label": "右膝疼痛减轻", "status": "resolved", "risk": "low", "sourceRefIds": ["sr-e2-0318-1"] }
           ]
         },
-        "report": "张叔总体稳定，建议继续家庭支持与呼吸训练。"
+        "report": "李婆婆疼痛与睡眠均有改善，建议保持康复训练并观察上下楼功能。"
+      },
+      {
+        "id": "session-e2-20260322",
+        "elderId": "e2",
+        "ifDemo": true,
+        "date": "2026-03-22",
+        "duration": 340,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e2-0322-1", "startTime": 0, "endTime": 8, "speaker": "social_worker", "text": "今日整体状态点呀？" },
+          { "id": "seg-e2-0322-2", "startTime": 8, "endTime": 17, "speaker": "elder", "text": "右膝基本稳阵，不过左膝偶尔都有酸痛。", "risk": "medium", "keywords": ["左膝酸痛"] },
+          { "id": "seg-e2-0322-3", "startTime": 17, "endTime": 24, "speaker": "elder", "text": "夜晚可瞓到五个钟，精神好咗。", "risk": "low", "keywords": ["睡眠稳定"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e2-0322-1", "segmentId": "seg-e2-0322-2", "startChar": 11, "endChar": 20, "text": "左膝偶尔都有酸痛" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "按需用药策略稳定。", "risk": "low" },
+          "symptoms": [{ "description": "右膝稳定，左膝出现间歇酸痛。", "risk": "medium", "sourceSegmentIds": ["seg-e2-0322-2"] }],
+          "diet": { "summary": "食欲正常。", "risk": "low" },
+          "emotion": { "summary": "精神较前改善。", "risk": "low" },
+          "adl": { "summary": "平地步行可独立完成。", "risk": "low" },
+          "social_support": { "summary": "家庭支持持续。", "risk": "low" },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [
+            { "id": "ai-e2-0322-1", "content": "增加左膝关节活动训练", "status": "pending", "priority": "low", "sourceSegmentIds": ["seg-e2-0322-2"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e2-0322-1", "title": "症状迁移", "type": "symptom", "risk": "medium", "summary": "右膝稳定后出现左膝间歇酸痛。", "sourceRefIds": ["sr-e2-0322-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e2-20260322",
+          "date": "2026-03-22",
+          "findings": [
+            { "id": "bf-e2-0322-1", "part": "left_leg", "label": "左膝间歇酸痛", "status": "new", "risk": "medium", "sourceRefIds": ["sr-e2-0322-1"] }
+          ]
+        },
+        "report": "李婆婆主要问题由右膝转为左膝间歇酸痛，整体睡眠与精神状态改善。"
+      }
+    ],
+    "e3": [
+      {
+        "id": "session-e3-20260310",
+        "elderId": "e3",
+        "ifDemo": true,
+        "date": "2026-03-10",
+        "duration": 350,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e3-0310-1", "startTime": 0, "endTime": 6, "speaker": "social_worker", "text": "张叔，最近呼吸同咳嗽情况点样？" },
+          { "id": "seg-e3-0310-2", "startTime": 6, "endTime": 16, "speaker": "elder", "text": "朝早咳痰多，快行几步就喘，夜晚平躺会焗。", "risk": "medium", "keywords": ["咳痰", "气促"] },
+          { "id": "seg-e3-0310-3", "startTime": 16, "endTime": 24, "speaker": "elder", "text": "吸入药有时忘记带出街。", "risk": "medium", "keywords": ["吸入药依从"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e3-0310-1", "segmentId": "seg-e3-0310-2", "startChar": 0, "endChar": 13, "text": "朝早咳痰多，快行几步就喘" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "吸入药总体使用规律，但外出依从不足。", "risk": "medium", "sourceSegmentIds": ["seg-e3-0310-3"] },
+          "symptoms": [{ "description": "活动后气促与晨起咳痰明显。", "risk": "medium", "sourceSegmentIds": ["seg-e3-0310-2"] }],
+          "diet": { "summary": "饮水量偏少。", "risk": "low" },
+          "emotion": { "summary": "对气促有担忧。", "risk": "medium" },
+          "adl": { "summary": "快走耐力不足。", "risk": "medium", "sourceSegmentIds": ["seg-e3-0310-2"] },
+          "social_support": { "summary": "与子女同住，照护资源较好。", "risk": "low" },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [
+            { "id": "ai-e3-0310-1", "content": "外出随身携带吸入药并记录触发场景", "status": "pending", "priority": "medium", "sourceSegmentIds": ["seg-e3-0310-2"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e3-0310-1", "title": "呼吸症状", "type": "symptom", "risk": "medium", "summary": "活动后气促与咳痰持续。", "sourceRefIds": ["sr-e3-0310-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e3-20260310",
+          "date": "2026-03-10",
+          "findings": [
+            { "id": "bf-e3-0310-1", "part": "chest", "label": "活动后气促", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-e3-0310-1"] }
+          ]
+        },
+        "report": "张叔慢阻肺症状近期波动，建议强化吸入药依从并进行呼吸训练。"
+      },
+      {
+        "id": "session-e3-20260315",
+        "elderId": "e3",
+        "ifDemo": true,
+        "date": "2026-03-15",
+        "duration": 320,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e3-0315-1", "startTime": 0, "endTime": 7, "speaker": "social_worker", "text": "上次建议后，呼吸情况有无改善？" },
+          { "id": "seg-e3-0315-2", "startTime": 7, "endTime": 16, "speaker": "elder", "text": "咳痰少咗，平地行路无咁喘，不过行斜路仲会喘。", "risk": "low", "keywords": ["症状缓解"] },
+          { "id": "seg-e3-0315-3", "startTime": 16, "endTime": 22, "speaker": "elder", "text": "吸入药每日都有用。", "risk": "low", "keywords": ["依从改善"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e3-0315-1", "segmentId": "seg-e3-0315-2", "startChar": 0, "endChar": 14, "text": "咳痰少咗，平地行路无咁喘" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "吸入药依从性明显提升。", "risk": "low", "sourceSegmentIds": ["seg-e3-0315-3"] },
+          "symptoms": [{ "description": "呼吸症状较前改善，斜坡负荷仍触发气促。", "risk": "low", "sourceSegmentIds": ["seg-e3-0315-2"] }],
+          "diet": { "summary": "饮水量增加。", "risk": "low" },
+          "emotion": { "summary": "对自我管理信心提升。", "risk": "low" },
+          "adl": { "summary": "平地行走耐力提升。", "risk": "low" },
+          "social_support": { "summary": "家属继续监督用药。", "risk": "low" },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [
+            { "id": "ai-e3-0315-1", "content": "继续每日呼吸训练15分钟", "status": "pending", "priority": "low", "sourceSegmentIds": ["seg-e3-0315-2"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e3-0315-1", "title": "呼吸功能改善", "type": "adl", "risk": "low", "summary": "平地活动气促明显减轻。", "sourceRefIds": ["sr-e3-0315-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e3-20260315",
+          "date": "2026-03-15",
+          "findings": [
+            { "id": "bf-e3-0315-1", "part": "chest", "label": "轻度活动后气促", "status": "resolved", "risk": "low", "sourceRefIds": ["sr-e3-0315-1"] }
+          ]
+        },
+        "report": "张叔呼吸症状趋势向好，建议继续维持吸入药与呼吸康复训练。"
+      },
+      {
+        "id": "session-e3-20260322",
+        "elderId": "e3",
+        "ifDemo": true,
+        "date": "2026-03-22",
+        "duration": 360,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e3-0322-1", "startTime": 0, "endTime": 8, "speaker": "social_worker", "text": "今次家访主要想睇下你体能同夜间症状。"},
+          { "id": "seg-e3-0322-2", "startTime": 8, "endTime": 17, "speaker": "elder", "text": "夜晚已经少咗焗，晨早偶尔咳一两次。", "risk": "low", "keywords": ["夜间改善"] },
+          { "id": "seg-e3-0322-3", "startTime": 17, "endTime": 25, "speaker": "elder", "text": "不过天气转凉嗰日会有少少胸闷。", "risk": "medium", "keywords": ["胸闷触发"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e3-0322-1", "segmentId": "seg-e3-0322-3", "startChar": 0, "endChar": 12, "text": "天气转凉嗰日会有少少胸闷" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "继续稳定使用吸入药。", "risk": "low" },
+          "symptoms": [{ "description": "偶发天气相关胸闷。", "risk": "medium", "sourceSegmentIds": ["seg-e3-0322-3"] }],
+          "diet": { "summary": "饮食规律。", "risk": "low" },
+          "emotion": { "summary": "整体乐观。", "risk": "low" },
+          "adl": { "summary": "体能维持稳定。", "risk": "low" },
+          "social_support": { "summary": "家庭陪伴持续。", "risk": "low" },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [
+            { "id": "ai-e3-0322-1", "content": "天气骤变时增加监测并减少户外负荷", "status": "pending", "priority": "medium", "sourceSegmentIds": ["seg-e3-0322-3"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e3-0322-1", "title": "诱因管理", "type": "symptom", "risk": "medium", "summary": "胸闷与天气变化相关。", "sourceRefIds": ["sr-e3-0322-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e3-20260322",
+          "date": "2026-03-22",
+          "findings": [
+            { "id": "bf-e3-0322-1", "part": "chest", "label": "天气相关胸闷", "status": "new", "risk": "medium", "sourceRefIds": ["sr-e3-0322-1"] }
+          ]
+        },
+        "report": "张叔总体稳定，出现天气相关胸闷新触发点，建议建立气候触发应对策略。"
+      }
+    ],
+    "e4": [
+      {
+        "id": "session-e4-20260308",
+        "elderId": "e4",
+        "ifDemo": true,
+        "date": "2026-03-08",
+        "duration": 410,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e4-0308-1", "startTime": 0, "endTime": 8, "speaker": "social_worker", "text": "王姨，脚趾伤口有无换药？血糖近排点呀？" },
+          { "id": "seg-e4-0308-2", "startTime": 8, "endTime": 17, "speaker": "elder", "text": "右脚趾仲有少少渗液，行耐啲会痛。", "risk": "high", "keywords": ["脚趾渗液", "疼痛"] },
+          { "id": "seg-e4-0308-3", "startTime": 17, "endTime": 25, "speaker": "elder", "text": "血糖晚餐后成日十以上。", "risk": "high", "keywords": ["餐后高血糖"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e4-0308-1", "segmentId": "seg-e4-0308-2", "startChar": 0, "endChar": 12, "text": "右脚趾仲有少少渗液" },
+          { "id": "sr-e4-0308-2", "segmentId": "seg-e4-0308-3", "startChar": 0, "endChar": 10, "text": "血糖晚餐后成日十以上" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "降糖方案可能不足，需医生复核。", "risk": "high", "sourceSegmentIds": ["seg-e4-0308-3"] },
+          "symptoms": [{ "description": "右脚趾伤口渗液并伴疼痛。", "risk": "high", "sourceSegmentIds": ["seg-e4-0308-2"] }],
+          "diet": { "summary": "晚餐碳水较高。", "risk": "medium" },
+          "emotion": { "summary": "对伤口恶化有焦虑。", "risk": "medium" },
+          "adl": { "summary": "长时间步行受限。", "risk": "medium", "sourceSegmentIds": ["seg-e4-0308-2"] },
+          "social_support": { "summary": "家属可协助换药。", "risk": "low" },
+          "warnings": ["糖尿病足伤口渗液需尽快处理"],
+          "warningSegmentIds": [["seg-e4-0308-2"]],
+          "action_items": [
+            { "id": "ai-e4-0308-1", "content": "48小时内安排伤口护理评估", "status": "pending", "priority": "high", "sourceSegmentIds": ["seg-e4-0308-2"] },
+            { "id": "ai-e4-0308-2", "content": "记录餐后血糖并复核饮食计划", "status": "pending", "priority": "high", "sourceSegmentIds": ["seg-e4-0308-3"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e4-0308-1", "title": "糖尿病足风险", "type": "warning", "risk": "high", "summary": "右脚趾渗液与疼痛提示感染风险。", "sourceRefIds": ["sr-e4-0308-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e4-20260308",
+          "date": "2026-03-08",
+          "findings": [
+            { "id": "bf-e4-0308-1", "part": "right_toes", "label": "右脚趾伤口渗液", "status": "ongoing", "risk": "high", "sourceRefIds": ["sr-e4-0308-1"] }
+          ]
+        },
+        "report": "王姨糖尿病足伤口仍有渗液，合并餐后高血糖，需尽快进行专业伤口与血糖管理。"
+      },
+      {
+        "id": "session-e4-20260318",
+        "elderId": "e4",
+        "ifDemo": true,
+        "date": "2026-03-18",
+        "duration": 360,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e4-0318-1", "startTime": 0, "endTime": 8, "speaker": "social_worker", "text": "上次护理后，伤口恢复得点？" },
+          { "id": "seg-e4-0318-2", "startTime": 8, "endTime": 17, "speaker": "elder", "text": "渗液少咗，痛都减轻，不过行快仲会扯住。", "risk": "medium", "keywords": ["伤口改善"] },
+          { "id": "seg-e4-0318-3", "startTime": 17, "endTime": 25, "speaker": "elder", "text": "餐后血糖大多数九点几到十。", "risk": "medium", "keywords": ["血糖仍高"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e4-0318-1", "segmentId": "seg-e4-0318-2", "startChar": 0, "endChar": 11, "text": "渗液少咗，痛都减轻" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "药物执行改善，但控糖仍需强化。", "risk": "medium" },
+          "symptoms": [{ "description": "脚趾伤口改善中，仍有活动诱发疼痛。", "risk": "medium", "sourceSegmentIds": ["seg-e4-0318-2"] }],
+          "diet": { "summary": "已减少甜食，但晚餐份量仍偏多。", "risk": "medium" },
+          "emotion": { "summary": "焦虑较前下降。", "risk": "low" },
+          "adl": { "summary": "步行耐量逐步恢复。", "risk": "low" },
+          "social_support": { "summary": "家属换药执行较好。", "risk": "low" },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [
+            { "id": "ai-e4-0318-1", "content": "继续每日伤口观察与拍照记录", "status": "pending", "priority": "medium", "sourceSegmentIds": ["seg-e4-0318-2"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e4-0318-1", "title": "伤口恢复中", "type": "symptom", "risk": "medium", "summary": "渗液和疼痛下降，恢复趋势向好。", "sourceRefIds": ["sr-e4-0318-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e4-20260318",
+          "date": "2026-03-18",
+          "findings": [
+            { "id": "bf-e4-0318-1", "part": "right_toes", "label": "右脚趾伤口恢复中", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-e4-0318-1"] }
+          ]
+        },
+        "report": "王姨伤口恢复中，风险由高转中，需继续控糖和伤口监测。"
+      },
+      {
+        "id": "session-e4-20260322",
+        "elderId": "e4",
+        "ifDemo": true,
+        "date": "2026-03-22",
+        "duration": 370,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e4-0322-1", "startTime": 0, "endTime": 8, "speaker": "social_worker", "text": "今日再检查下脚趾同血糖记录。"},
+          { "id": "seg-e4-0322-2", "startTime": 8, "endTime": 17, "speaker": "elder", "text": "伤口基本收口，偶尔有少少刺痛。", "risk": "low", "keywords": ["伤口收口"] },
+          { "id": "seg-e4-0322-3", "startTime": 17, "endTime": 25, "speaker": "elder", "text": "血糖大部分八点几，控制好咗。", "risk": "low", "keywords": ["控糖改善"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e4-0322-1", "segmentId": "seg-e4-0322-2", "startChar": 0, "endChar": 10, "text": "伤口基本收口" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "降糖依从性良好。", "risk": "low" },
+          "symptoms": [{ "description": "脚趾伤口基本愈合，残余轻微痛感。", "risk": "low", "sourceSegmentIds": ["seg-e4-0322-2"] }],
+          "diet": { "summary": "低糖饮食执行良好。", "risk": "low" },
+          "emotion": { "summary": "对恢复有信心。", "risk": "low" },
+          "adl": { "summary": "步行能力接近基线。", "risk": "low" },
+          "social_support": { "summary": "家庭支持稳定。", "risk": "low" },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [
+            { "id": "ai-e4-0322-1", "content": "转入每周一次伤口复查", "status": "pending", "priority": "low", "sourceSegmentIds": ["seg-e4-0322-2"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e4-0322-1", "title": "阶段性康复", "type": "symptom", "risk": "low", "summary": "糖尿病足伤口基本愈合。", "sourceRefIds": ["sr-e4-0322-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e4-20260322",
+          "date": "2026-03-22",
+          "findings": [
+            { "id": "bf-e4-0322-1", "part": "right_toes", "label": "右脚趾伤口已收口", "status": "resolved", "risk": "low", "sourceRefIds": ["sr-e4-0322-1"] }
+          ]
+        },
+        "report": "王姨糖尿病足风险明显下降，建议维持现有控糖和足部护理方案。"
+      }
+    ],
+    "e5": [
+      {
+        "id": "session-e5-20260310",
+        "elderId": "e5",
+        "ifDemo": true,
+        "date": "2026-03-10",
+        "duration": 340,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e5-0310-1", "startTime": 0, "endTime": 7, "speaker": "social_worker", "text": "何伯，近排心情同腰背痛点样？" },
+          { "id": "seg-e5-0310-2", "startTime": 7, "endTime": 16, "speaker": "elder", "text": "心情麻麻，成日自己一个，夜晚腰背会痛醒。", "risk": "medium", "keywords": ["情绪低落", "腰背痛"] },
+          { "id": "seg-e5-0310-3", "startTime": 16, "endTime": 24, "speaker": "elder", "text": "有时懒得煮饭，随便食两啖算。", "risk": "medium", "keywords": ["营养不足"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e5-0310-1", "segmentId": "seg-e5-0310-2", "startChar": 0, "endChar": 16, "text": "心情麻麻，夜晚腰背会痛醒" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "止痛药间歇使用。", "risk": "low" },
+          "symptoms": [{ "description": "夜间腰背痛影响睡眠。", "risk": "medium", "sourceSegmentIds": ["seg-e5-0310-2"] }],
+          "diet": { "summary": "独居导致饮食不规律。", "risk": "medium", "sourceSegmentIds": ["seg-e5-0310-3"] },
+          "emotion": { "summary": "孤独感明显，情绪低落。", "risk": "medium", "sourceSegmentIds": ["seg-e5-0310-2"] },
+          "adl": { "summary": "日常可自理，但夜间睡眠中断。", "risk": "medium" },
+          "social_support": { "summary": "独居，社交参与不足。", "risk": "medium" },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [
+            { "id": "ai-e5-0310-1", "content": "转介社区日间活动并评估情绪支持需求", "status": "pending", "priority": "medium", "sourceSegmentIds": ["seg-e5-0310-2"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e5-0310-1", "title": "情绪与疼痛共病", "type": "emotion", "risk": "medium", "summary": "孤独感与夜间腰背痛同时存在。", "sourceRefIds": ["sr-e5-0310-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e5-20260310",
+          "date": "2026-03-10",
+          "findings": [
+            { "id": "bf-e5-0310-1", "part": "back", "viewSide": "back", "label": "夜间腰背痛", "status": "ongoing", "risk": "medium", "sourceRefIds": ["sr-e5-0310-1"] }
+          ]
+        },
+        "report": "何伯存在情绪低落与夜间腰背痛，建议同步推进疼痛管理和社交支持。"
+      },
+      {
+        "id": "session-e5-20260318",
+        "elderId": "e5",
+        "ifDemo": true,
+        "date": "2026-03-18",
+        "duration": 310,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e5-0318-1", "startTime": 0, "endTime": 8, "speaker": "social_worker", "text": "上次建议你去长者中心，去咗未？" },
+          { "id": "seg-e5-0318-2", "startTime": 8, "endTime": 17, "speaker": "elder", "text": "去咗两次，心情好咗，背痛都冇咁频密。", "risk": "low", "keywords": ["社交参与", "症状缓解"] },
+          { "id": "seg-e5-0318-3", "startTime": 17, "endTime": 24, "speaker": "elder", "text": "而家会自己煲汤，食得好啲。", "risk": "low", "keywords": ["饮食改善"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e5-0318-1", "segmentId": "seg-e5-0318-2", "startChar": 0, "endChar": 15, "text": "去咗两次，心情好咗，背痛少咗" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "止痛药需求减少。", "risk": "low" },
+          "symptoms": [{ "description": "腰背痛发作频率下降。", "risk": "low", "sourceSegmentIds": ["seg-e5-0318-2"] }],
+          "diet": { "summary": "饮食规律性改善。", "risk": "low", "sourceSegmentIds": ["seg-e5-0318-3"] },
+          "emotion": { "summary": "社交参与后情绪明显改善。", "risk": "low", "sourceSegmentIds": ["seg-e5-0318-2"] },
+          "adl": { "summary": "睡眠较前改善。", "risk": "low" },
+          "social_support": { "summary": "开始建立社区支持网络。", "risk": "low" },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [
+            { "id": "ai-e5-0318-1", "content": "维持每周至少2次中心活动", "status": "pending", "priority": "low", "sourceSegmentIds": ["seg-e5-0318-2"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e5-0318-1", "title": "社交干预有效", "type": "social", "risk": "low", "summary": "社交参与对情绪与疼痛均有正向作用。", "sourceRefIds": ["sr-e5-0318-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e5-20260318",
+          "date": "2026-03-18",
+          "findings": [
+            { "id": "bf-e5-0318-1", "part": "back", "viewSide": "back", "label": "腰背痛减轻", "status": "resolved", "risk": "low", "sourceRefIds": ["sr-e5-0318-1"] }
+          ]
+        },
+        "report": "何伯社交参与后情绪与疼痛均改善，建议持续社区参与与日常规律。"
+      },
+      {
+        "id": "session-e5-20260322",
+        "elderId": "e5",
+        "ifDemo": true,
+        "date": "2026-03-22",
+        "duration": 335,
+        "status": "completed",
+        "transcript": [
+          { "id": "seg-e5-0322-1", "startTime": 0, "endTime": 8, "speaker": "social_worker", "text": "今次探访想了解你最近整体状态。"},
+          { "id": "seg-e5-0322-2", "startTime": 8, "endTime": 17, "speaker": "elder", "text": "心情稳定咗，不过落雨天腰会酸。", "risk": "medium", "keywords": ["天气相关腰痛"] },
+          { "id": "seg-e5-0322-3", "startTime": 17, "endTime": 24, "speaker": "elder", "text": "我继续去中心，认识咗几个朋友。", "risk": "low", "keywords": ["社会支持提升"] }
+        ],
+        "sourceRefs": [
+          { "id": "sr-e5-0322-1", "segmentId": "seg-e5-0322-2", "startChar": 8, "endChar": 15, "text": "落雨天腰会酸" }
+        ],
+        "extractResult": {
+          "medication": { "summary": "按需使用止痛药，频率低。", "risk": "low" },
+          "symptoms": [{ "description": "天气变化相关腰部酸痛。", "risk": "low", "sourceSegmentIds": ["seg-e5-0322-2"] }],
+          "diet": { "summary": "维持三餐规律。", "risk": "low" },
+          "emotion": { "summary": "情绪总体稳定。", "risk": "low" },
+          "adl": { "summary": "日常生活功能稳定。", "risk": "low" },
+          "social_support": { "summary": "社区同伴支持形成。", "risk": "low", "sourceSegmentIds": ["seg-e5-0322-3"] },
+          "warnings": [],
+          "warningSegmentIds": [],
+          "action_items": [
+            { "id": "ai-e5-0322-1", "content": "雨天前后进行腰背伸展与热敷", "status": "pending", "priority": "low", "sourceSegmentIds": ["seg-e5-0322-2"] }
+          ],
+          "insightBlocks": [
+            { "id": "ib-e5-0322-1", "title": "维持期管理", "type": "adl", "risk": "low", "summary": "情绪稳定，腰痛进入天气触发型管理阶段。", "sourceRefIds": ["sr-e5-0322-1"] }
+          ]
+        },
+        "bodyMapSnapshot": {
+          "sessionId": "session-e5-20260322",
+          "date": "2026-03-22",
+          "findings": [
+            { "id": "bf-e5-0322-1", "part": "back", "viewSide": "back", "label": "天气相关腰酸", "status": "new", "risk": "low", "sourceRefIds": ["sr-e5-0322-1"] }
+          ]
+        },
+        "report": "何伯进入稳定期，重点转向天气相关腰痛预防与社交维持。"
       }
     ]
   }

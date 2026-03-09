@@ -1,5 +1,5 @@
 import type { ActionItemStatus, BodyFindingStatus, InsightBlockType, RecordingState, RiskLevel, Speaker } from '@prisma/client';
-import type { CalendarDay, CommunityBodyStat, ElderProfile, VisitSession } from './contracts.js';
+import type { CalendarDay, CommunityBodyStat, ElderProfile, SessionSummary, VisitSession } from './contracts.js';
 
 const toDate = (value: Date) => value.toISOString().slice(0, 10);
 
@@ -82,7 +82,9 @@ export const mapSession = (session: {
     sourceSegmentIds: unknown;
   }>;
   warnings: Array<{
+    id: string;
     content: string;
+    severity: RiskLevel;
     sourceRefs: Array<{ sourceRefId: string; sourceRef: { segmentId: string } }>;
   }>;
   actionItems: Array<{
@@ -170,6 +172,13 @@ export const mapSession = (session: {
       })),
       warnings: session.warnings.map((warning) => warning.content),
       warningSegmentIds: session.warnings.map((warning) => warning.sourceRefs.map((link) => link.sourceRef.segmentId)),
+      warningItems: session.warnings.map((warning) => ({
+        id: warning.id,
+        content: warning.content,
+        severity: warning.severity,
+        sourceRefIds: warning.sourceRefs.map((link) => link.sourceRefId),
+        sourceSegmentIds: warning.sourceRefs.map((link) => link.sourceRef.segmentId),
+      })),
       insightBlocks: session.insightBlocks.map((block) => ({
         id: block.id,
         title: block.title,
@@ -220,7 +229,7 @@ export const mapCalendar = (rows: Array<{ date: Date; elderIds: string }>): Cale
   rows.map((row) => ({ date: toDate(row.date), elderIds: JSON.parse(row.elderIds) as string[] }));
 
 export const mapCommunityStats = (
-  rows: Array<{ part: string; issueCount: bigint | number; elderCount: bigint | number; activeCount: bigint | number; resolvedCount: bigint | number }>,
+  rows: Array<{ part: string; issueCount: bigint | number; elderCount: bigint | number; activeCount: bigint | number; resolvedCount: bigint | number; topLabels?: { name: string; count: number }[] }>,
   totalElders: number
 ): CommunityBodyStat[] =>
   rows.map((item) => {
@@ -231,6 +240,29 @@ export const mapCommunityStats = (
       elderCount,
       activeCount: Number(item.activeCount),
       resolvedCount: Number(item.resolvedCount),
+      topLabels: item.topLabels,
       rate: Number((elderCount / Math.max(totalElders, 1)).toFixed(2)),
     };
   });
+
+export const mapSessionSummary = (session: {
+  id: string;
+  elderId: string;
+  ifDemo: boolean;
+  date: Date;
+  duration: number;
+  status: RecordingState;
+  report: string | null;
+  _count: { warnings: number; actionItems: number; bodyFindings: number };
+}): SessionSummary => ({
+  id: session.id,
+  elderId: session.elderId,
+  ifDemo: session.ifDemo,
+  date: toDate(session.date),
+  duration: session.duration,
+  status: session.status as SessionSummary['status'],
+  warningCount: session._count.warnings,
+  actionItemCount: session._count.actionItems,
+  bodyFindingCount: session._count.bodyFindings,
+  hasReport: Boolean(session.report?.trim()),
+});

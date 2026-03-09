@@ -10,6 +10,10 @@ interface BodyMapPanelProps {
   isEditMode?: boolean;
   onEditFinding?: (findingId: string, patch: { label?: string; status?: 'new' | 'ongoing' | 'resolved' }) => void;
   onDeleteFinding?: (findingId: string) => void;
+  fixedBodySide?: 'anterior' | 'posterior';
+  title?: string;
+  hideHeader?: boolean;
+  hideLegend?: boolean;
 }
 
 const partLabelMap: Record<BodyPart, string> = {
@@ -76,8 +80,13 @@ export default function BodyMapPanel({
   isEditMode,
   onEditFinding,
   onDeleteFinding,
+  fixedBodySide,
+  title,
+  hideHeader,
+  hideLegend,
 }: BodyMapPanelProps) {
-  const [bodySide, setBodySide] = useState<'anterior' | 'posterior'>('anterior');
+  const [bodySideState, setBodySideState] = useState<'anterior' | 'posterior'>('anterior');
+  const bodySide = fixedBodySide ?? bodySideState;
   const findingByPart = findings.reduce<Record<string, BodyFinding[]>>((acc, finding) => {
     acc[finding.part] = [...(acc[finding.part] ?? []), finding];
     return acc;
@@ -121,25 +130,33 @@ export default function BodyMapPanel({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="text-sm font-semibold text-slate-800">人体分区图（前/后视）</div>
-        <div className="flex gap-1 rounded-md border border-slate-200 p-1 text-xs">
-          <button
-            className={`rounded px-2 py-1 ${bodySide === 'anterior' ? 'bg-blue-100 text-blue-700' : 'text-slate-600'}`}
-            onClick={() => setBodySide('anterior')}
-          >
-            正面
-          </button>
-          <button
-            className={`rounded px-2 py-1 ${bodySide === 'posterior' ? 'bg-blue-100 text-blue-700' : 'text-slate-600'}`}
-            onClick={() => setBodySide('posterior')}
-          >
-            背面
-          </button>
+      {hideHeader ? null : (
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-sm font-semibold text-slate-800">{title ?? '人体分区图（前/后视）'}</div>
+          {fixedBodySide ? (
+            <div className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600">
+              {fixedBodySide === 'anterior' ? '正面' : '背面'}
+            </div>
+          ) : (
+            <div className="flex gap-1 rounded-md border border-slate-200 p-1 text-xs">
+              <button
+                className={`rounded px-2 py-1 ${bodySide === 'anterior' ? 'bg-blue-100 text-blue-700' : 'text-slate-600'}`}
+                onClick={() => setBodySideState('anterior')}
+              >
+                正面
+              </button>
+              <button
+                className={`rounded px-2 py-1 ${bodySide === 'posterior' ? 'bg-blue-100 text-blue-700' : 'text-slate-600'}`}
+                onClick={() => setBodySideState('posterior')}
+              >
+                背面
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      <div className="mx-auto max-w-[230px] rounded-lg border border-slate-100 bg-slate-50 p-2">
+      <div className="mx-auto max-w-[240px] rounded-lg border border-slate-100 bg-slate-50 p-2">
         <div className="relative">
           <Model
             data={modelData}
@@ -180,7 +197,7 @@ export default function BodyMapPanel({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className={`mt-3 grid gap-2 ${fixedBodySide ? 'grid-cols-1' : 'grid-cols-2'}`}>
         {shownFindings.map((finding) => {
           const active = !!activeSourceRefId && finding.sourceRefIds.includes(activeSourceRefId);
           return (
@@ -231,11 +248,13 @@ export default function BodyMapPanel({
           );
         })}
       </div>
-      <div className="mt-3 flex gap-2 text-[10px] text-slate-600">
-        <span className="rounded bg-red-100 px-1.5 py-0.5">新发</span>
-        <span className="rounded bg-amber-100 px-1.5 py-0.5">持续</span>
-        <span className="rounded bg-emerald-100 px-1.5 py-0.5">痊愈</span>
-      </div>
+      {hideLegend ? null : (
+        <div className="mt-3 flex gap-2 text-[10px] text-slate-600">
+          <span className="rounded bg-red-100 px-1.5 py-0.5">新发</span>
+          <span className="rounded bg-amber-100 px-1.5 py-0.5">持续</span>
+          <span className="rounded bg-emerald-100 px-1.5 py-0.5">痊愈</span>
+        </div>
+      )}
     </div>
   );
 }

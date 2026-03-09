@@ -1,12 +1,15 @@
 import {
   BodyFinding,
   CalendarDay,
+  CommunityDashboard,
   CommunityBodyStat,
+  DailySessionEntry,
   DimensionSummaryItem,
   ElderProfile,
   ExtractResult,
   InsightBlock,
   RiskLevel,
+  SessionSummary,
   SourceRef,
   VisitSession,
 } from '../types';
@@ -63,6 +66,31 @@ export const ApiService = {
       `${baseUrl}/api/elders/${encodeURIComponent(elderId)}/sessions?includeDemo=${ctx.showDemoData === false ? '0' : '1'}`
     );
   },
+  getSessionSummariesByElder: async (elderId: string, ctx: ApiContext): Promise<SessionSummary[]> => {
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/elders/:elderId/sessions?view=summary');
+    return fetchJson<SessionSummary[]>(
+      `${baseUrl}/api/elders/${encodeURIComponent(elderId)}/sessions?view=summary&includeDemo=${ctx.showDemoData === false ? '0' : '1'}`
+    );
+  },
+  getSessionsByDate: async (date: string, ctx: ApiContext): Promise<DailySessionEntry[]> => {
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/sessions/by-date');
+    return fetchJson<DailySessionEntry[]>(
+      `${baseUrl}/api/sessions/by-date?date=${encodeURIComponent(date)}&includeDemo=${ctx.showDemoData === false ? '0' : '1'}`
+    );
+  },
+  getSessionFull: async (
+    sessionId: string,
+    include: Array<'transcript' | 'sourceRefs' | 'extract' | 'bodyMap'>,
+    ctx: ApiContext
+  ): Promise<VisitSession> => {
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/sessions/:sessionId/full');
+    return fetchJson<VisitSession>(
+      `${baseUrl}/api/sessions/${encodeURIComponent(sessionId)}/full?include=${encodeURIComponent(include.join(','))}&includeDemo=${ctx.showDemoData === false ? '0' : '1'}`
+    );
+  },
   getCalendarDays: async (ctx: ApiContext): Promise<CalendarDay[]> => {
     const baseUrl = resolveBaseUrl(ctx);
     if (!baseUrl) return notImplemented('/api/calendar');
@@ -76,6 +104,22 @@ export const ApiService = {
     return fetchJson<CommunityBodyStat[]>(
       `${baseUrl}/api/community/body-heatmap?includeDemo=${ctx.showDemoData === false ? '0' : '1'}`
     );
+  },
+  getCommunityDashboard: async (
+    params: {
+      window?: '7d' | '30d' | '90d' | 'all';
+      granularity?: 'day' | 'week' | 'month';
+    },
+    ctx: ApiContext
+  ): Promise<CommunityDashboard> => {
+    const baseUrl = resolveBaseUrl(ctx);
+    if (!baseUrl) return notImplemented('/api/community/dashboard');
+    const query = new URLSearchParams({
+      includeDemo: ctx.showDemoData === false ? '0' : '1',
+      window: params.window ?? '30d',
+      granularity: params.granularity ?? 'day',
+    });
+    return fetchJson<CommunityDashboard>(`${baseUrl}/api/community/dashboard?${query.toString()}`);
   },
   appendTranscriptSegment: async (sessionId: string, segmentText: string, ctx: ApiContext) => {
     const baseUrl = resolveBaseUrl(ctx);

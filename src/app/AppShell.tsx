@@ -9,7 +9,7 @@ import { useAppStore } from '@/state/appStore';
 
 export default function AppShell() {
   const {
-    state: { settings, currentPage, communityBodyStats, isEditMode, savingState, perFieldSavingMap },
+    state: { settings, currentPage, communityBodyStats, communityDashboard, isEditMode, savingState, perFieldSavingMap },
     initialize,
     openSettings,
     setCurrentPage,
@@ -89,18 +89,18 @@ export default function AppShell() {
             </div>
           </div>
           {currentPage === 'community' ? (
-            <CommunityStatsPage stats={communityBodyStats} />
+            <CommunityStatsPage stats={communityBodyStats} dashboard={communityDashboard} />
           ) : currentPage === 'archive' ? (
             <PeopleArchivePage />
           ) : (
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 grid overflow-hidden [grid-template-columns:minmax(420px,48%)_minmax(620px,52%)]">
               {/* Left pane: Transcript */}
-              <div className="flex-1 flex flex-col border-r border-slate-200 bg-white">
+              <div className="min-w-0 flex flex-col border-r border-slate-200 bg-white">
                 <TranscriptPaneV2 />
               </div>
 
               {/* Right pane: Insights & Report */}
-              <div className="w-[500px] xl:w-[600px] flex-shrink-0 flex flex-col bg-slate-50 overflow-y-auto">
+              <div className="min-w-0 flex flex-col bg-slate-50 overflow-y-auto">
                 <InsightPaneV2 />
               </div>
             </div>
