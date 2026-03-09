@@ -151,36 +151,21 @@ export default function SettingsPanel() {
           </section>
 
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-slate-700">运行模式</h3>
-            <label className="block text-sm text-slate-700">
-              <span>模式</span>
-              <select
-                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
-                value={formState.mode}
-                onChange={(event) => setField('mode', event.target.value as AppSettings['mode'])}
-              >
-                <option value="demo">演示模式（Mock + 演示数据）</option>
-                <option value="live">实机模式（真实接口）</option>
-              </select>
-            </label>
-          </section>
-
-          <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-slate-700">接口设置</h3>
+            <h3 className="text-sm font-semibold text-slate-700">数据与接口设置</h3>
             <label className="flex items-center justify-between text-sm text-slate-700">
-              <span>使用 Mock 数据</span>
+              <span>显示演示数据（if_demo）</span>
               <input
                 type="checkbox"
-                checked={formState.useMock}
-                onChange={(event) => setField('useMock', event.target.checked)}
+                checked={formState.showDemoData}
+                onChange={(event) => setField('showDemoData', event.target.checked)}
               />
             </label>
             <label className="block text-sm text-slate-700">
-              <span>API Base URL（留空则提示 API 未接入）</span>
+              <span>API Base URL（数据库后端）</span>
               <input
                 className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
                 value={formState.apiBaseUrl}
-                placeholder="例如: http://localhost:8000"
+                placeholder="例如: http://localhost:8787"
                 onChange={(event) => setField('apiBaseUrl', event.target.value)}
               />
             </label>

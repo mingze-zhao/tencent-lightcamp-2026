@@ -7,6 +7,9 @@ interface BodyMapPanelProps {
   findings: BodyFinding[];
   activeSourceRefId?: string;
   onSelectFinding?: (finding: BodyFinding) => void;
+  isEditMode?: boolean;
+  onEditFinding?: (findingId: string, patch: { label?: string; status?: 'new' | 'ongoing' | 'resolved' }) => void;
+  onDeleteFinding?: (findingId: string) => void;
 }
 
 const partLabelMap: Record<BodyPart, string> = {
@@ -66,7 +69,14 @@ const inferSide = (finding: BodyFinding): 'anterior' | 'posterior' => {
   return finding.part === 'back' ? 'posterior' : 'anterior';
 };
 
-export default function BodyMapPanel({ findings, activeSourceRefId, onSelectFinding }: BodyMapPanelProps) {
+export default function BodyMapPanel({
+  findings,
+  activeSourceRefId,
+  onSelectFinding,
+  isEditMode,
+  onEditFinding,
+  onDeleteFinding,
+}: BodyMapPanelProps) {
   const [bodySide, setBodySide] = useState<'anterior' | 'posterior'>('anterior');
   const findingByPart = findings.reduce<Record<string, BodyFinding[]>>((acc, finding) => {
     acc[finding.part] = [...(acc[finding.part] ?? []), finding];
@@ -184,7 +194,39 @@ export default function BodyMapPanel({ findings, activeSourceRefId, onSelectFind
               onClick={() => onSelectFinding?.(finding)}
             >
               <div className="font-semibold">{partLabelMap[finding.part]}</div>
-              <div className="mt-1">{finding.label}</div>
+              {isEditMode ? (
+                <div className="mt-1 space-y-1">
+                  <input
+                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-700"
+                    value={finding.label}
+                    onChange={(event) => onEditFinding?.(finding.id, { label: event.target.value })}
+                    onClick={(event) => event.stopPropagation()}
+                  />
+                  <select
+                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-700"
+                    value={finding.status}
+                    onChange={(event) =>
+                      onEditFinding?.(finding.id, { status: event.target.value as 'new' | 'ongoing' | 'resolved' })
+                    }
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <option value="new">new</option>
+                    <option value="ongoing">ongoing</option>
+                    <option value="resolved">resolved</option>
+                  </select>
+                  <button
+                    className="w-full rounded border border-red-200 bg-red-50 px-1.5 py-1 text-[11px] text-red-700"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDeleteFinding?.(finding.id);
+                    }}
+                  >
+                    删除
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-1">{finding.label}</div>
+              )}
             </button>
           );
         })}

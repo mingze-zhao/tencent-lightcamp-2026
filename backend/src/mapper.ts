@@ -15,11 +15,13 @@ export const mapElder = (elder: {
   emergencyContactName: string;
   emergencyContactRel: string;
   emergencyContactPhone: string;
+  ifDemo: boolean;
   overallRisk: RiskLevel;
   lastVisitDate: Date | null;
   tags: Array<{ tag: string }>;
 }): ElderProfile => ({
   id: elder.id,
+  ifDemo: elder.ifDemo,
   name: elder.name,
   age: elder.age,
   gender: elder.gender as ElderProfile['gender'],
@@ -46,6 +48,7 @@ export const mapSession = (session: {
   elderId: string;
   date: Date;
   duration: number;
+  ifDemo: boolean;
   status: RecordingState;
   report: string | null;
   transcript: Array<{
@@ -65,6 +68,7 @@ export const mapSession = (session: {
     text: string;
   }>;
   dimensions: Array<{
+    id: string;
     dimension: string;
     summary: string;
     risk: RiskLevel;
@@ -122,6 +126,7 @@ export const mapSession = (session: {
   return {
     id: session.id,
     elderId: session.elderId,
+    ifDemo: session.ifDemo,
     date: toDate(session.date),
     duration: session.duration,
     status: session.status as VisitSession['status'],
@@ -173,6 +178,14 @@ export const mapSession = (session: {
         summary: block.summary,
         sourceRefIds: block.sourceRefs.map((item) => item.sourceRefId),
       })),
+      dimensionSummaries: session.dimensions.map((row) => ({
+        id: row.id,
+        dimension: row.dimension,
+        summary: row.summary,
+        risk: row.risk,
+        details: (row.details as string[] | undefined) ?? undefined,
+        sourceSegmentIds: (row.sourceSegmentIds as string[] | undefined) ?? undefined,
+      })),
     },
     bodyMapSnapshot: {
       sessionId: session.id,
@@ -185,8 +198,12 @@ export const mapSession = (session: {
           | 'abdomen'
           | 'left_arm'
           | 'right_arm'
+          | 'left_fingers'
+          | 'right_fingers'
           | 'left_leg'
           | 'right_leg'
+          | 'left_toes'
+          | 'right_toes'
           | 'back',
         label: finding.label,
         status: finding.status as 'new' | 'ongoing' | 'resolved',

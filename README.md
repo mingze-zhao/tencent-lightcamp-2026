@@ -11,7 +11,7 @@
 - **左侧**：家访录音转写文本，支持说话人区分与风险关键词高亮（编辑器式呈现）。
 - **右侧**：结构化洞察看板 — 用药 / 症状 / 情绪 / 社交等维度卡片、高风险预警、待跟进事项与报告预览。
 
-本仓库现在包含 **前端 + Node API + Prisma + SQLite**，支持演示模式和数据库实机模式两套链路。
+本仓库现在包含 **前端 + Node API + Prisma + SQLite**，统一数据库存储；演示数据通过 `if_demo` 字段标记，并由 `includeDemo` 查询参数控制是否展示。
 
 ## 当前可用交互范围（已升级）
 
@@ -21,7 +21,13 @@
 - 新增**人体问题图 + 时间线拖动**，可切换不同采访日查看部位状态（新发/持续/痊愈）。
 - 新增**社区统计页**，展示全社区长者的部位热力分布与共性问题排名。
 - 支持 `Ctrl/Cmd + K` 聚焦长者搜索、`Ctrl/Cmd + ,` 打开设置、转录区聚焦后按 `Space` 录音开关。
-- 设置页新增**演示模式 / 实机模式**；演示模式默认读取 JSON 演示数据并启用 Mock。
+- 设置页支持**显示演示数据（if_demo）**开关与 API 地址配置。
+- 工作台新增**编辑模式**：进入后可直接修改长者标签、转录文本、右侧结构化内容，并自动保存到数据库。
+- 转录右上角支持**真实导出**（`Export as TXT` / `Export as JSON`）。
+- 编辑保存升级为**字段级乐观更新**：失败仅回滚当前字段，并给出字段路径提示。
+- 右侧结构化信息支持**新增/删除全覆盖**：warning / insight block / action item / body finding / dimension summary。
+- 转录区支持**长按句子 Quick Add**，可把该句（或选中文本）直接绑定为 sourceRef 并新增结构化条目。
+- 顶部新增**人员档案**页签，支持单人跨时间全量档案查看（时间轴 + 快照）。
 
 ---
 
@@ -69,7 +75,7 @@ npx prisma migrate dev --name init
 npm run dev
 ```
 
-前端设置里把运行模式切到 `live`，并设置 `API Base URL=http://localhost:8787`，即可切到数据库驱动。
+前端设置里将 `API Base URL` 设为 `http://localhost:8787`。若关闭“显示演示数据（if_demo）”，将仅展示真实业务数据。
 
 ---
 
@@ -82,7 +88,8 @@ src/
 │   ├── cases/        # 长者列表与个案切换
 │   ├── transcript/   # 转写区（短语级高亮、增量生成入口）
 │   ├── insights/     # 结构化看板、人体图、时间线
-│   └── stats/        # 社区统计热力图页面
+│   ├── stats/        # 社区统计热力图页面
+│   └── profiles/     # 人员档案页（跨时间完整档案）
 ├── services/         # 数据层（Mock / API 适配）
 ├── data/demo/        # 演示 JSON 数据（便于 Agent 写入）
 ├── types/            # TypeScript 类型契约
@@ -94,8 +101,8 @@ src/
 
 ## 演示说明
 
-- 当前默认是 **演示模式**：无需后端即可体验多长者、多采访、日历、短语级联动、人体图与社区统计。
-- 切到 **实机模式** 后，可接入真实 API/LLM；若未配置会弹出 `API 未接入` 提示（占位行为）。
+- 当前默认读取数据库，演示数据以 `if_demo=true` 存在于同一库中。
+- 关闭“显示演示数据（if_demo）”后，页面仅显示 `if_demo=false` 数据。
 - 路演时可参考根目录 `demo-script.md` 中的场景与话术进行展示。
 
 ---
@@ -104,9 +111,9 @@ src/
 
 核心表（与前后端字段对齐）：
 
-- `elders`: 长者主档（基本信息、慢病、风险、最近家访日期）
+- `elders`: 长者主档（基本信息、慢病、风险、最近家访日期、`if_demo`）
 - `elder_tags`: 标签表（支持姓名/标签搜索）
-- `sessions`: 家访会话（日期、时长、状态、报告）
+- `sessions`: 家访会话（日期、时长、状态、报告、`if_demo`）
 - `transcript_segments`: 转写分句
 - `source_refs`: 短语级锚点（segment + char range）
 - `session_dimensions`: medication/diet/emotion/adl/social_support 摘要
@@ -125,11 +132,12 @@ src/
 
 以下样例可直接用于 `POST /api/ingest/json`（一次写入 elders + sessions）。
 
-### elder 样例
+### elder 样例（含 `if_demo`）
 
 ```json
 {
   "id": "elder-1001",
+  "ifDemo": false,
   "name": "王婆婆",
   "age": 84,
   "gender": "F",
@@ -144,12 +152,13 @@ src/
 }
 ```
 
-### session + transcript + source_ref + insight_block + body_finding 样例
+### session + transcript + source_ref + insight_block + body_finding 样例（含 `if_demo`）
 
 ```json
 {
   "id": "session-1001-1",
   "elderId": "elder-1001",
+  "ifDemo": false,
   "date": "2026-03-08",
   "duration": 420,
   "status": "completed",
@@ -201,6 +210,7 @@ src/
   "elders": [
     {
       "id": "elder-1001",
+      "ifDemo": true,
       "name": "王婆婆",
       "age": 84,
       "gender": "F",
@@ -219,6 +229,7 @@ src/
       {
         "id": "session-1001-1",
         "elderId": "elder-1001",
+        "ifDemo": true,
         "date": "2026-03-08",
         "duration": 420,
         "status": "completed",
@@ -243,6 +254,44 @@ src/
   }
 }
 ```
+
+### includeDemo 查询示例
+
+```bash
+# 展示所有数据（含 if_demo=true）
+GET /api/elders?includeDemo=1
+
+# 仅展示真实数据（if_demo=false）
+GET /api/elders?includeDemo=0
+GET /api/calendar?includeDemo=0
+GET /api/community/body-heatmap?includeDemo=0
+```
+
+### 结构化新增/删除与 Quick Add 接口
+
+```bash
+# 新增 sourceRef（长按 Quick Add 使用）
+POST /api/sessions/:sessionId/source-refs
+
+# 结构化条目新增
+POST /api/sessions/:sessionId/insights
+POST /api/sessions/:sessionId/warnings
+POST /api/sessions/:sessionId/action-items
+POST /api/sessions/:sessionId/body-findings
+POST /api/sessions/:sessionId/dimensions
+
+# 结构化条目删除
+DELETE /api/sessions/:sessionId/insights/:blockId
+DELETE /api/sessions/:sessionId/warnings/:warningIndex
+DELETE /api/sessions/:sessionId/action-items/:itemId
+DELETE /api/sessions/:sessionId/body-findings/:findingId
+DELETE /api/sessions/:sessionId/dimensions/:dimensionId
+```
+
+## 数据流与 Prompt 文档
+
+- 端到端数据流：`docs/dataflow.md`
+- Agent / LLM Prompt 模板：`docs/agent-prompts.md`
 
 ---
 

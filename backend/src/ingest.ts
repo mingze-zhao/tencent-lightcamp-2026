@@ -47,6 +47,7 @@ export async function ingestDataset(prisma: PrismaClient, dataset: DemoDataset) 
         emergencyContactName: elder.emergencyContact.name,
         emergencyContactPhone: elder.emergencyContact.phone,
         emergencyContactRel: elder.emergencyContact.relation,
+        ifDemo: elder.ifDemo ?? true,
         overallRisk: elder.overallRisk ?? 'low',
         lastVisitDate: elder.lastVisitDate ? new Date(elder.lastVisitDate) : null,
         tags: {
@@ -67,6 +68,7 @@ export async function ingestDataset(prisma: PrismaClient, dataset: DemoDataset) 
           elderId,
           date: new Date(session.date),
           duration: session.duration,
+          ifDemo: session.ifDemo ?? true,
           status: session.status,
           report: session.report ?? null,
         },

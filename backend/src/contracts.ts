@@ -6,6 +6,7 @@ export type BodyViewSide = 'front' | 'back';
 
 export interface ElderProfile {
   id: string;
+  ifDemo?: boolean;
   name: string;
   age: number;
   gender: 'M' | 'F';
@@ -67,6 +68,15 @@ export interface ExtractDimension {
   sourceSegmentIds?: string[];
 }
 
+export interface DimensionSummaryItem {
+  id: string;
+  dimension: string;
+  summary: string;
+  risk: RiskLevel;
+  details?: string[];
+  sourceSegmentIds?: string[];
+}
+
 export interface ExtractResult {
   medication: ExtractDimension;
   symptoms: Array<{ id?: string; description: string; risk: RiskLevel; sourceSegmentIds?: string[] }>;
@@ -84,11 +94,13 @@ export interface ExtractResult {
   warnings: string[];
   warningSegmentIds?: string[][];
   insightBlocks?: InsightBlock[];
+  dimensionSummaries?: DimensionSummaryItem[];
 }
 
 export interface VisitSession {
   id: string;
   elderId: string;
+  ifDemo?: boolean;
   date: string;
   duration: number;
   status: RecordingState;

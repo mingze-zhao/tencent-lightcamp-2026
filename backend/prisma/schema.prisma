@@ -67,6 +67,7 @@ model Elder {
   emergencyContactName  String
   emergencyContactPhone String
   emergencyContactRel   String
+  ifDemo                Boolean   @default(false)
   overallRisk           RiskLevel @default(low)
   lastVisitDate         DateTime?
   createdAt             DateTime  @default(now())
@@ -94,6 +95,7 @@ model Session {
   elderId  String
   date     DateTime
   duration Int
+  ifDemo   Boolean        @default(false)
   status   RecordingState @default(idle)
   report   String?
 

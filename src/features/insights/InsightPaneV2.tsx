@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '@/state/appStore';
@@ -21,6 +21,7 @@ export default function InsightPaneV2() {
       sessionsByElder,
       status,
       recordingState,
+      isEditMode,
       settings,
       activeSegmentId,
       activeSourceRefId,
@@ -31,6 +32,12 @@ export default function InsightPaneV2() {
     setActiveSourceRef,
     selectSession,
     pushToast,
+    updateInsightBlockFields,
+    updateWarningContent,
+    updateBodyFindingFields,
+    updateActionItemFields,
+    addStructuredItem,
+    deleteStructuredItem,
   } = useAppStore();
 
   const extract = selectedSession?.extractResult;
@@ -101,9 +108,21 @@ export default function InsightPaneV2() {
         {selectedSession ? (
           <>
             <VisitTimelineSlider sessions={sessions} selectedSessionId={selectedSessionId} onSelectSession={selectSession} />
+            {isEditMode ? (
+              <div className="-mb-4 flex justify-end">
+                <button
+                  className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+                  onClick={() => void addStructuredItem(selectedSession.id, 'body_finding')}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  新增身体发现
+                </button>
+              </div>
+            ) : null}
             <BodyMapPanel
               findings={selectedSession.bodyMapSnapshot?.findings ?? []}
               activeSourceRefId={activeSourceRefId}
+              isEditMode={isEditMode}
               onSelectFinding={(finding) => {
                 const sourceId = finding.sourceRefIds[0];
                 if (!sourceId) return;
@@ -112,12 +131,29 @@ export default function InsightPaneV2() {
                 setActiveSourceRef(source.id);
                 setActiveSegment(source.segmentId);
               }}
+              onEditFinding={(findingId, patch) => {
+                if (!selectedSession) return;
+                updateBodyFindingFields(selectedSession.id, findingId, patch);
+              }}
+              onDeleteFinding={(findingId) => {
+                if (!selectedSession || !isEditMode) return;
+                void deleteStructuredItem(selectedSession.id, 'body_finding', findingId);
+              }}
             />
 
             <motion.div ref={warningsRef} className="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2 font-semibold text-red-800">
                 <AlertCircle className="h-5 w-5" />
                 <h3>Warnings ({extract?.warnings.length ?? 0})</h3>
+                {isEditMode ? (
+                  <button
+                    className="ml-auto inline-flex items-center gap-1 rounded border border-red-200 bg-white px-2 py-1 text-xs text-red-700"
+                    onClick={() => selectedSession && void addStructuredItem(selectedSession.id, 'warning')}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    新增
+                  </button>
+                ) : null}
               </div>
               {extract?.warnings.length ? (
                 <div className="space-y-2">
@@ -139,7 +175,17 @@ export default function InsightPaneV2() {
                       >
                         <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-red-500" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-800">{warning}</p>
+                          {isEditMode ? (
+                            <input
+                              className="w-full rounded border border-red-200 bg-white px-2 py-1 text-sm text-slate-800"
+                              value={warning}
+                              onChange={(event) =>
+                                selectedSession && updateWarningContent(selectedSession.id, idx, event.target.value)
+                              }
+                            />
+                          ) : (
+                            <p className="text-sm font-medium text-slate-800">{warning}</p>
+                          )}
                           <div className="mt-1 flex flex-wrap gap-1">
                             {refs.map((source) => (
                               <button
@@ -162,6 +208,18 @@ export default function InsightPaneV2() {
                               </button>
                             ))}
                           </div>
+                          {isEditMode ? (
+                            <button
+                              className="mt-2 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-red-700"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                selectedSession && void deleteStructuredItem(selectedSession.id, 'warning', idx);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              删除
+                            </button>
+                          ) : null}
                         </div>
                       </div>
                     );
@@ -173,7 +231,18 @@ export default function InsightPaneV2() {
             </motion.div>
 
             <motion.div ref={blocksRef} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="mb-3 text-sm font-semibold text-slate-800">Generated Blocks (with source references)</div>
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                <span>Generated Blocks (with source references)</span>
+                {isEditMode ? (
+                  <button
+                    className="ml-auto inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+                    onClick={() => selectedSession && void addStructuredItem(selectedSession.id, 'insight')}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    新增
+                  </button>
+                ) : null}
+              </div>
               <div className="space-y-2">
                 {insightBlocks.length === 0 ? (
                   <div className="text-xs text-slate-400">No generated block yet.</div>
@@ -189,11 +258,35 @@ export default function InsightPaneV2() {
                           : 'border-emerald-200 bg-emerald-50'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium text-slate-800">{block.title}</div>
+                      <div className="flex items-center justify-between gap-2">
+                        {isEditMode ? (
+                          <input
+                            className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-800"
+                            value={block.title}
+                            onChange={(event) =>
+                              selectedSession &&
+                              updateInsightBlockFields(selectedSession.id, block.id, { title: event.target.value })
+                            }
+                          />
+                        ) : (
+                          <div className="text-sm font-medium text-slate-800">{block.title}</div>
+                        )}
                         <span className={`rounded px-1.5 py-0.5 text-[10px] ${riskBadgeMap[block.risk]}`}>{block.risk}</span>
                       </div>
-                      <div className="mt-1 text-sm text-slate-700">{block.summary}</div>
+                      <div className="mt-1 text-sm text-slate-700">
+                        {isEditMode ? (
+                          <textarea
+                            className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                            value={block.summary}
+                            onChange={(event) =>
+                              selectedSession &&
+                              updateInsightBlockFields(selectedSession.id, block.id, { summary: event.target.value })
+                            }
+                          />
+                        ) : (
+                          block.summary
+                        )}
+                      </div>
                       <div className="mt-2 flex flex-wrap gap-1">
                         {block.sourceRefIds.map((sourceId) => {
                           const source = sourceRefMap[sourceId];
@@ -216,6 +309,51 @@ export default function InsightPaneV2() {
                           );
                         })}
                       </div>
+                      {isEditMode ? (
+                        <button
+                          className="mt-2 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-red-700"
+                          onClick={() => selectedSession && void deleteStructuredItem(selectedSession.id, 'insight', block.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          删除
+                        </button>
+                      ) : null}
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+
+            <motion.div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                <span>Dimension Summaries</span>
+                {isEditMode ? (
+                  <button
+                    className="ml-auto inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+                    onClick={() => selectedSession && void addStructuredItem(selectedSession.id, 'dimension')}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    新增
+                  </button>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                {(extract?.dimensionSummaries ?? []).length === 0 ? (
+                  <div className="text-xs text-slate-400">No dimension summary yet.</div>
+                ) : (
+                  (extract?.dimensionSummaries ?? []).map((item) => (
+                    <div key={item.id} className="rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
+                      <div className="font-semibold">{item.dimension}</div>
+                      <div className="mt-1">{item.summary}</div>
+                      {isEditMode ? (
+                        <button
+                          className="mt-2 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-red-700"
+                          onClick={() => selectedSession && void deleteStructuredItem(selectedSession.id, 'dimension', item.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          删除
+                        </button>
+                      ) : null}
                     </div>
                   ))
                 )}
@@ -226,6 +364,15 @@ export default function InsightPaneV2() {
               <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
                 <CheckCircle2 className="h-5 w-5 text-blue-600" />
                 <h3 className="font-semibold text-slate-800">Action Items</h3>
+                {isEditMode ? (
+                  <button
+                    className="ml-auto inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+                    onClick={() => selectedSession && void addStructuredItem(selectedSession.id, 'action_item')}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    新增
+                  </button>
+                ) : null}
               </div>
               {extract?.action_items.length ? (
                 <div className="divide-y divide-slate-100">
@@ -245,11 +392,26 @@ export default function InsightPaneV2() {
                         className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600"
                         onChange={(event) => {
                           event.stopPropagation();
-                          void toggleActionItem(item.id, event.target.checked);
+                          if (selectedSession) {
+                            updateActionItemFields(selectedSession.id, item.id, { checked: event.target.checked });
+                          } else {
+                            void toggleActionItem(item.id, event.target.checked);
+                          }
                         }}
                       />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-800">{item.content}</p>
+                        {isEditMode ? (
+                          <input
+                            className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-sm font-medium text-slate-800"
+                            value={item.content}
+                            onChange={(event) =>
+                              selectedSession &&
+                              updateActionItemFields(selectedSession.id, item.id, { content: event.target.value })
+                            }
+                          />
+                        ) : (
+                          <p className="text-sm font-medium text-slate-800">{item.content}</p>
+                        )}
                         <div className="mt-1.5 flex items-center gap-2">
                           <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wider ${riskBadgeMap[item.priority]}`}>{item.priority}</span>
                           <span className="flex items-center gap-1 text-xs text-slate-500">
@@ -281,6 +443,18 @@ export default function InsightPaneV2() {
                               </button>
                             ))}
                         </div>
+                        {isEditMode ? (
+                          <button
+                            className="mt-2 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-red-700"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              selectedSession && void deleteStructuredItem(selectedSession.id, 'action_item', item.id);
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            删除
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   ))}

@@ -2,17 +2,21 @@ import Sidebar from '../features/cases/Sidebar';
 import TranscriptPaneV2 from '../features/transcript/TranscriptPaneV2';
 import InsightPaneV2 from '../features/insights/InsightPaneV2';
 import CommunityStatsPage from '../features/stats/CommunityStatsPage';
+import PeopleArchivePage from '../features/profiles/PeopleArchivePage';
 import { Settings } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAppStore } from '@/state/appStore';
 
 export default function AppShell() {
   const {
-    state: { settings, currentPage, communityBodyStats },
+    state: { settings, currentPage, communityBodyStats, isEditMode, savingState, perFieldSavingMap },
     initialize,
     openSettings,
     setCurrentPage,
+    setEditMode,
   } = useAppStore();
+  const failedFields = Object.entries(perFieldSavingMap).filter(([, value]) => value.status === 'error');
+  const savingFields = Object.entries(perFieldSavingMap).filter(([, value]) => value.status === 'saving');
 
   useEffect(() => {
     void initialize();
@@ -61,9 +65,33 @@ export default function AppShell() {
             >
               社区统计
             </button>
+            <button
+              className={`rounded-md px-3 py-1.5 text-sm ${currentPage === 'archive' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}
+              onClick={() => setCurrentPage('archive')}
+            >
+              人员档案
+            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <span className={`rounded px-2 py-0.5 text-xs ${savingState === 'saving' ? 'bg-amber-100 text-amber-700' : savingState === 'error' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                {savingState === 'saving'
+                  ? `保存中(${savingFields.length})`
+                  : savingState === 'error'
+                  ? `保存失败(${failedFields.length})`
+                  : '已同步'}
+              </span>
+              <button
+                className={`rounded-md px-3 py-1.5 text-sm ${isEditMode ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                onClick={() => setEditMode(!isEditMode)}
+                aria-label="切换编辑模式"
+              >
+                {isEditMode ? '退出编辑' : '进入编辑'}
+              </button>
+            </div>
           </div>
           {currentPage === 'community' ? (
             <CommunityStatsPage stats={communityBodyStats} />
+          ) : currentPage === 'archive' ? (
+            <PeopleArchivePage />
           ) : (
             <div className="flex-1 flex overflow-hidden">
               {/* Left pane: Transcript */}

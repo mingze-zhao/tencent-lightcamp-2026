@@ -4,23 +4,28 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useReducer,
   type PropsWithChildren,
 } from 'react';
 import { ApiNotImplementedError, ApiService } from '@/services/api';
-import { LLMAdapter } from '@/services/llmAdapter';
 import type {
   AppSettings,
+  BodyFinding,
   CalendarDay,
   CommunityBodyStat,
   ElderProfile,
   RecordingState,
+  StructuredItemType,
+  SourceRef,
   ToastMessage,
   VisitSession,
 } from '@/types';
 
 type AppStatus = 'idle' | 'loading' | 'ready' | 'error';
-type PageKey = 'workbench' | 'community';
+type PageKey = 'workbench' | 'community' | 'archive';
+type SavingState = 'idle' | 'saving' | 'error';
+type FieldSavingStatus = 'saving' | 'error';
 
 interface AppState {
   status: AppStatus;
@@ -42,6 +47,10 @@ interface AppState {
   notifications: ToastMessage[];
   isSettingsOpen: boolean;
   isAddElderOpen: boolean;
+  isEditMode: boolean;
+  dirtyMap: Record<string, true>;
+  perFieldSavingMap: Record<string, { status: FieldSavingStatus; operationId: string; message?: string }>;
+  savingState: SavingState;
   settings: AppSettings;
 }
 
@@ -66,6 +75,20 @@ type AppAction =
   | { type: 'removeToast'; payload: string }
   | { type: 'setSettingsOpen'; payload: boolean }
   | { type: 'setAddElderOpen'; payload: boolean }
+  | { type: 'setEditMode'; payload: boolean }
+  | { type: 'setSavingState'; payload: SavingState }
+  | {
+      type: 'setFieldSaving';
+      payload: {
+        fieldPath: string;
+        status: FieldSavingStatus;
+        operationId: string;
+        message?: string;
+      };
+    }
+  | { type: 'clearFieldSaving'; payload: { fieldPath: string; operationId?: string } }
+  | { type: 'markDirty'; payload: string }
+  | { type: 'clearDirty'; payload?: string }
   | { type: 'mergeSettings'; payload: Partial<AppSettings> }
   | { type: 'updateActionItem'; payload: { itemId: string; checked: boolean } };
 
@@ -80,10 +103,9 @@ const defaultSettings: AppSettings = {
   sampleRate: '16k',
   reportLanguage: 'zh-HK',
   reportTemplate: 'standard',
-  useMock: true,
   apiBaseUrl: 'http://localhost:8787',
+  showDemoData: true,
   autoGenerateReport: false,
-  mode: 'demo',
 };
 
 const initialState: AppState = {
@@ -99,6 +121,10 @@ const initialState: AppState = {
   notifications: [],
   isSettingsOpen: false,
   isAddElderOpen: false,
+  isEditMode: false,
+  dirtyMap: {},
+  perFieldSavingMap: {},
+  savingState: 'idle',
   settings: defaultSettings,
 };
 
@@ -156,6 +182,38 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, isSettingsOpen: action.payload };
     case 'setAddElderOpen':
       return { ...state, isAddElderOpen: action.payload };
+    case 'setEditMode':
+      return { ...state, isEditMode: action.payload };
+    case 'setSavingState':
+      return { ...state, savingState: action.payload };
+    case 'setFieldSaving':
+      return {
+        ...state,
+        perFieldSavingMap: {
+          ...state.perFieldSavingMap,
+          [action.payload.fieldPath]: {
+            status: action.payload.status,
+            operationId: action.payload.operationId,
+            message: action.payload.message,
+          },
+        },
+      };
+    case 'clearFieldSaving': {
+      const existing = state.perFieldSavingMap[action.payload.fieldPath];
+      if (!existing) return state;
+      if (action.payload.operationId && existing.operationId !== action.payload.operationId) return state;
+      const next = { ...state.perFieldSavingMap };
+      delete next[action.payload.fieldPath];
+      return { ...state, perFieldSavingMap: next };
+    }
+    case 'markDirty':
+      return { ...state, dirtyMap: { ...state.dirtyMap, [action.payload]: true } };
+    case 'clearDirty': {
+      if (!action.payload) return { ...state, dirtyMap: {} };
+      const next = { ...state.dirtyMap };
+      delete next[action.payload];
+      return { ...state, dirtyMap: next };
+    }
     case 'mergeSettings':
       return { ...state, settings: { ...state.settings, ...action.payload } };
     case 'updateActionItem': {
@@ -190,6 +248,37 @@ interface AppStoreValue {
   setActiveSegment: (segmentId?: string) => void;
   setActiveSourceRef: (sourceRefId?: string) => void;
   setCurrentPage: (page: PageKey) => void;
+  updateElderFields: (elderId: string, patch: Partial<ElderProfile>) => void;
+  updateTranscriptSegmentText: (sessionId: string, segmentId: string, text: string) => void;
+  updateInsightBlockFields: (sessionId: string, blockId: string, patch: { title?: string; summary?: string }) => void;
+  updateWarningContent: (sessionId: string, warningIndex: number, content: string) => void;
+  updateBodyFindingFields: (
+    sessionId: string,
+    findingId: string,
+    patch: { label?: string; status?: 'new' | 'ongoing' | 'resolved' }
+  ) => void;
+  updateActionItemFields: (
+    sessionId: string,
+    itemId: string,
+    patch: { content?: string; checked?: boolean }
+  ) => void;
+  addStructuredItem: (
+    sessionId: string,
+    type: StructuredItemType,
+    payload?: { sourceRefIds?: string[]; segmentIds?: string[] }
+  ) => Promise<void>;
+  deleteStructuredItem: (
+    sessionId: string,
+    type: StructuredItemType,
+    itemIdOrIndex: string | number
+  ) => Promise<void>;
+  quickAddStructuredFromTranscript: (
+    sessionId: string,
+    segmentId: string,
+    selectedText: string,
+    type: StructuredItemType,
+    range?: { startChar: number; endChar: number }
+  ) => Promise<void>;
   toggleRecording: () => Promise<void>;
   appendTranscriptAndGenerate: (segmentText: string) => Promise<void>;
   runExtractAndReport: () => Promise<void>;
@@ -200,6 +289,7 @@ interface AppStoreValue {
   saveSettings: (settings: Partial<AppSettings>) => void;
   openAddElder: () => void;
   closeAddElder: () => void;
+  setEditMode: (enabled: boolean) => void;
   pushToast: (toast: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
 }
@@ -209,6 +299,8 @@ const makeToastId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8
 
 export function AppStoreProvider({ children }: PropsWithChildren) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const saveTimersRef = useRef<Record<string, number>>({});
+  const fieldOpRef = useRef<Record<string, string>>({});
 
   const pushToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
     dispatch({ type: 'addToast', payload: { id: makeToastId(), ...toast } });
@@ -232,20 +324,20 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
   );
 
   const resolveCtx = useCallback(
-    (override?: { useMock: boolean; apiBaseUrl: string }) => ({
-      useMock: override?.useMock ?? state.settings.useMock,
+    (override?: { apiBaseUrl: string; showDemoData: boolean }) => ({
       baseUrl: override?.apiBaseUrl ?? state.settings.apiBaseUrl,
+      showDemoData: override?.showDemoData ?? state.settings.showDemoData,
     }),
-    [state.settings.apiBaseUrl, state.settings.useMock]
+    [state.settings.apiBaseUrl, state.settings.showDemoData]
   );
 
-  const refreshCommunityStats = useCallback(async (override?: { useMock: boolean; apiBaseUrl: string }) => {
+  const refreshCommunityStats = useCallback(async (override?: { apiBaseUrl: string; showDemoData: boolean }) => {
     const stats = await ApiService.getCommunityBodyStats(resolveCtx(override));
     dispatch({ type: 'setCommunityStats', payload: stats });
   }, [resolveCtx]);
 
   const selectElder = useCallback(
-    async (elderId: string, override?: { useMock: boolean; apiBaseUrl: string }) => {
+    async (elderId: string, override?: { apiBaseUrl: string; showDemoData: boolean }) => {
       dispatch({ type: 'setSelectedElder', payload: elderId });
       dispatch({ type: 'setStatus', payload: 'loading' });
       try {
@@ -273,8 +365,8 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       }
       const override = stored
         ? {
-            useMock: (JSON.parse(stored) as Partial<AppSettings>).useMock ?? true,
             apiBaseUrl: (JSON.parse(stored) as Partial<AppSettings>).apiBaseUrl ?? '',
+            showDemoData: (JSON.parse(stored) as Partial<AppSettings>).showDemoData ?? true,
           }
         : undefined;
       const elders = await ApiService.getElders(resolveCtx(override));
@@ -343,6 +435,483 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
     [state.selectedElderId, state.sessionsByElder]
   );
 
+  const scheduleSave = useCallback(
+    (
+      fieldPath: string,
+      worker: () => Promise<void>,
+      rollback: () => void
+    ) => {
+      const operationId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      fieldOpRef.current[fieldPath] = operationId;
+      dispatch({ type: 'markDirty', payload: fieldPath });
+      dispatch({ type: 'setFieldSaving', payload: { fieldPath, status: 'saving', operationId } });
+      dispatch({ type: 'setSavingState', payload: 'saving' });
+
+      const prev = saveTimersRef.current[fieldPath];
+      if (prev) window.clearTimeout(prev);
+      saveTimersRef.current[fieldPath] = window.setTimeout(async () => {
+        try {
+          await worker();
+          dispatch({ type: 'clearDirty', payload: fieldPath });
+          dispatch({ type: 'clearFieldSaving', payload: { fieldPath, operationId } });
+          const hasDirty = Object.keys(state.dirtyMap).some((key) => key !== fieldPath);
+          dispatch({ type: 'setSavingState', payload: hasDirty ? 'saving' : 'idle' });
+        } catch (error) {
+          if (fieldOpRef.current[fieldPath] === operationId) {
+            rollback();
+          }
+          dispatch({
+            type: 'setFieldSaving',
+            payload: {
+              fieldPath,
+              status: 'error',
+              operationId,
+              message: `保存失败：${fieldPath}`,
+            },
+          });
+          dispatch({ type: 'setSavingState', payload: 'error' });
+          pushToast({
+            type: 'error',
+            title: `保存失败：${fieldPath}`,
+            description: error instanceof Error ? error.message : '未知错误',
+          });
+        }
+      }, 600);
+    },
+    [pushToast, state.dirtyMap]
+  );
+
+  const updateElderFields = useCallback(
+    (elderId: string, patch: Partial<ElderProfile>) => {
+      const previous = state.elders.find((elder) => elder.id === elderId);
+      if (!previous) return;
+      dispatch({
+        type: 'setElders',
+        payload: state.elders.map((elder) => (elder.id === elderId ? { ...elder, ...patch } : elder)),
+      });
+      const patchEntries = Object.entries(patch);
+      patchEntries.forEach(([fieldName]) => {
+        const fieldPath = `elder:${elderId}.${fieldName}`;
+        scheduleSave(
+          fieldPath,
+          async () => {
+            await ApiService.updateElder(elderId, patch, resolveCtx());
+          },
+          () => {
+            dispatch({
+              type: 'setElders',
+              payload: state.elders.map((elder) =>
+                elder.id === elderId ? { ...elder, [fieldName]: previous[fieldName as keyof ElderProfile] } : elder
+              ),
+            });
+          }
+        );
+      });
+    },
+    [resolveCtx, scheduleSave, state.elders]
+  );
+
+  const updateTranscriptSegmentText = useCallback(
+    (sessionId: string, segmentId: string, text: string) => {
+      if (!state.selectedSession || state.selectedSession.id !== sessionId) return;
+      const next: VisitSession = {
+        ...state.selectedSession,
+        transcript: state.selectedSession.transcript.map((seg) => (seg.id === segmentId ? { ...seg, text } : seg)),
+      };
+      const previous = state.selectedSession.transcript.find((seg) => seg.id === segmentId)?.text ?? '';
+      patchSelectedSession(next);
+      scheduleSave(
+        `transcript:${segmentId}.text`,
+        async () => {
+          await ApiService.updateTranscriptSegment(sessionId, segmentId, { text }, resolveCtx());
+        },
+        () => {
+          if (!state.selectedSession || state.selectedSession.id !== sessionId) return;
+          patchSelectedSession({
+            ...state.selectedSession,
+            transcript: state.selectedSession.transcript.map((seg) =>
+              seg.id === segmentId ? { ...seg, text: previous } : seg
+            ),
+          });
+        }
+      );
+    },
+    [patchSelectedSession, resolveCtx, scheduleSave, state.selectedSession]
+  );
+
+  const updateInsightBlockFields = useCallback(
+    (sessionId: string, blockId: string, patch: { title?: string; summary?: string }) => {
+      if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.extractResult) return;
+      const blocks = (state.selectedSession.extractResult.insightBlocks ?? []).map((item) =>
+        item.id === blockId ? { ...item, ...patch } : item
+      );
+      const previous = (state.selectedSession.extractResult.insightBlocks ?? []).find((item) => item.id === blockId);
+      if (!previous) return;
+      patchSelectedSession({
+        ...state.selectedSession,
+        extractResult: { ...state.selectedSession.extractResult, insightBlocks: blocks },
+      });
+      Object.keys(patch).forEach((fieldName) => {
+        const fieldPath = `insight:${blockId}.${fieldName}`;
+        scheduleSave(
+          fieldPath,
+          async () => {
+            await ApiService.updateInsightBlock(sessionId, blockId, patch, resolveCtx());
+          },
+          () => {
+            if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.extractResult)
+              return;
+            const rollbackBlocks = (state.selectedSession.extractResult.insightBlocks ?? []).map((item) =>
+              item.id === blockId ? { ...item, [fieldName]: previous[fieldName as keyof typeof previous] } : item
+            );
+            patchSelectedSession({
+              ...state.selectedSession,
+              extractResult: { ...state.selectedSession.extractResult, insightBlocks: rollbackBlocks },
+            });
+          }
+        );
+      });
+    },
+    [patchSelectedSession, resolveCtx, scheduleSave, state.selectedSession]
+  );
+
+  const updateWarningContent = useCallback(
+    (sessionId: string, warningIndex: number, content: string) => {
+      if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.extractResult) return;
+      const warnings = state.selectedSession.extractResult.warnings.map((item, idx) => (idx === warningIndex ? content : item));
+      const previous = state.selectedSession.extractResult.warnings[warningIndex] ?? '';
+      patchSelectedSession({
+        ...state.selectedSession,
+        extractResult: { ...state.selectedSession.extractResult, warnings },
+      });
+      scheduleSave(
+        `warning[${warningIndex}].content`,
+        async () => {
+          await ApiService.updateWarning(sessionId, warningIndex, content, resolveCtx());
+        },
+        () => {
+          if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.extractResult)
+            return;
+          const rollbackWarnings = state.selectedSession.extractResult.warnings.map((item, idx) =>
+            idx === warningIndex ? previous : item
+          );
+          patchSelectedSession({
+            ...state.selectedSession,
+            extractResult: { ...state.selectedSession.extractResult, warnings: rollbackWarnings },
+          });
+        }
+      );
+    },
+    [patchSelectedSession, resolveCtx, scheduleSave, state.selectedSession]
+  );
+
+  const updateBodyFindingFields = useCallback(
+    (sessionId: string, findingId: string, patch: { label?: string; status?: 'new' | 'ongoing' | 'resolved' }) => {
+      if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.bodyMapSnapshot) return;
+      const findings = state.selectedSession.bodyMapSnapshot.findings.map((item) =>
+        item.id === findingId ? { ...item, ...patch } : item
+      );
+      const previous = state.selectedSession.bodyMapSnapshot.findings.find((item) => item.id === findingId);
+      if (!previous) return;
+      patchSelectedSession({
+        ...state.selectedSession,
+        bodyMapSnapshot: { ...state.selectedSession.bodyMapSnapshot, findings },
+      });
+      Object.keys(patch).forEach((fieldName) => {
+        const fieldPath = `bodyFinding:${findingId}.${fieldName}`;
+        scheduleSave(
+          fieldPath,
+          async () => {
+            await ApiService.updateBodyFinding(sessionId, findingId, patch, resolveCtx());
+          },
+          () => {
+            if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.bodyMapSnapshot)
+              return;
+            const rollbackFindings = state.selectedSession.bodyMapSnapshot.findings.map((item) =>
+              item.id === findingId ? { ...item, [fieldName]: previous[fieldName as keyof typeof previous] } : item
+            );
+            patchSelectedSession({
+              ...state.selectedSession,
+              bodyMapSnapshot: { ...state.selectedSession.bodyMapSnapshot, findings: rollbackFindings },
+            });
+          }
+        );
+      });
+    },
+    [patchSelectedSession, resolveCtx, scheduleSave, state.selectedSession]
+  );
+
+  const updateActionItemFields = useCallback(
+    (sessionId: string, itemId: string, patch: { content?: string; checked?: boolean }) => {
+      if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.extractResult) return;
+      const actionItems = state.selectedSession.extractResult.action_items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              ...(patch.content === undefined ? {} : { content: patch.content }),
+              ...(patch.checked === undefined
+                ? {}
+                : { status: (patch.checked ? 'completed' : 'pending') as 'completed' | 'pending' }),
+            }
+          : item
+      );
+      const previous = state.selectedSession.extractResult.action_items.find((item) => item.id === itemId);
+      if (!previous) return;
+      patchSelectedSession({
+        ...state.selectedSession,
+        extractResult: { ...state.selectedSession.extractResult, action_items: actionItems },
+      });
+      Object.keys(patch).forEach((fieldName) => {
+        const fieldPath = `actionItem:${itemId}.${fieldName === 'checked' ? 'status' : fieldName}`;
+        scheduleSave(
+          fieldPath,
+          async () => {
+            await ApiService.updateActionItemDetail(
+              sessionId,
+              itemId,
+              { checked: patch.checked, content: patch.content },
+              resolveCtx()
+            );
+          },
+          () => {
+            if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.extractResult)
+              return;
+            const rollbackActionItems = state.selectedSession.extractResult.action_items.map((item) =>
+              item.id === itemId ? { ...item, content: previous.content, status: previous.status } : item
+            );
+            patchSelectedSession({
+              ...state.selectedSession,
+              extractResult: { ...state.selectedSession.extractResult, action_items: rollbackActionItems },
+            });
+          }
+        );
+      });
+    },
+    [patchSelectedSession, resolveCtx, scheduleSave, state.selectedSession]
+  );
+
+  const ensureSourceRefForSegment = useCallback(
+    async (
+      sessionId: string,
+      segmentId: string,
+      selectedText: string,
+      range?: { startChar: number; endChar: number }
+    ): Promise<SourceRef | null> => {
+      const segment = state.selectedSession?.transcript.find((item) => item.id === segmentId);
+      if (!segment) return null;
+      const start = range?.startChar ?? Math.max(0, segment.text.indexOf(selectedText));
+      const end =
+        range?.endChar ??
+        (start >= 0 ? Math.min(segment.text.length - 1, start + Math.max(selectedText.length - 1, 0)) : segment.text.length - 1);
+      const sourceRef = await ApiService.createSourceRef(
+        sessionId,
+        {
+          segmentId,
+          startChar: Math.max(0, start),
+          endChar: Math.max(Math.max(0, start), end),
+          text: selectedText || segment.text,
+        },
+        resolveCtx()
+      );
+      if (!state.selectedSession || state.selectedSession.id !== sessionId) return sourceRef;
+      const existing = state.selectedSession.sourceRefs ?? [];
+      patchSelectedSession({
+        ...state.selectedSession,
+        sourceRefs: [...existing, sourceRef],
+      });
+      return sourceRef;
+    },
+    [patchSelectedSession, resolveCtx, state.selectedSession]
+  );
+
+  const addStructuredItem = useCallback(
+    async (sessionId: string, type: StructuredItemType, payload?: { sourceRefIds?: string[]; segmentIds?: string[] }) => {
+      if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.extractResult) return;
+      try {
+        if (type === 'warning') {
+          const created = await ApiService.createWarning(
+            sessionId,
+            { content: '新预警（待编辑）', severity: 'medium', sourceRefIds: payload?.sourceRefIds },
+            resolveCtx()
+          );
+          const warnings = [...state.selectedSession.extractResult.warnings, created.content];
+          const warningSegmentIds = [
+            ...(state.selectedSession.extractResult.warningSegmentIds ?? []),
+            payload?.segmentIds ?? [],
+          ];
+          patchSelectedSession({
+            ...state.selectedSession,
+            extractResult: { ...state.selectedSession.extractResult, warnings, warningSegmentIds },
+          });
+        } else if (type === 'insight') {
+          const created = await ApiService.createInsightBlock(
+            sessionId,
+            {
+              title: '新结构化块',
+              summary: '待补充',
+              risk: 'low',
+              type: 'symptom',
+              sourceRefIds: payload?.sourceRefIds,
+            },
+            resolveCtx()
+          );
+          patchSelectedSession({
+            ...state.selectedSession,
+            extractResult: {
+              ...state.selectedSession.extractResult,
+              insightBlocks: [...(state.selectedSession.extractResult.insightBlocks ?? []), created],
+            },
+          });
+        } else if (type === 'action_item') {
+          const created = await ApiService.createActionItem(
+            sessionId,
+            { content: '新跟进事项', priority: 'medium', status: 'pending', sourceRefIds: payload?.sourceRefIds },
+            resolveCtx()
+          );
+          patchSelectedSession({
+            ...state.selectedSession,
+            extractResult: {
+              ...state.selectedSession.extractResult,
+              action_items: [...state.selectedSession.extractResult.action_items, created],
+            },
+          });
+        } else if (type === 'body_finding') {
+          const created = await ApiService.createBodyFinding(
+            sessionId,
+            {
+              part: 'chest',
+              label: '新身体发现',
+              status: 'ongoing',
+              risk: 'medium',
+              viewSide: 'front',
+              sourceRefIds: payload?.sourceRefIds,
+            } as Partial<BodyFinding>,
+            resolveCtx()
+          );
+          patchSelectedSession({
+            ...state.selectedSession,
+            bodyMapSnapshot: {
+              sessionId,
+              date: state.selectedSession.date,
+              findings: [...(state.selectedSession.bodyMapSnapshot?.findings ?? []), created],
+            },
+          });
+        } else if (type === 'dimension') {
+          const created = await ApiService.createDimensionSummary(
+            sessionId,
+            {
+              dimension: `dimension_${Date.now()}`,
+              summary: '待补充',
+              risk: 'low',
+              details: [],
+              sourceSegmentIds: payload?.segmentIds ?? [],
+            },
+            resolveCtx()
+          );
+          patchSelectedSession({
+            ...state.selectedSession,
+            extractResult: {
+              ...state.selectedSession.extractResult,
+              dimensionSummaries: [...(state.selectedSession.extractResult.dimensionSummaries ?? []), created],
+            },
+          });
+        }
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    [handleApiError, patchSelectedSession, resolveCtx, state.selectedSession]
+  );
+
+  const deleteStructuredItem = useCallback(
+    async (sessionId: string, type: StructuredItemType, itemIdOrIndex: string | number) => {
+      if (!state.selectedSession || state.selectedSession.id !== sessionId || !state.selectedSession.extractResult) return;
+      try {
+        if (type === 'warning') {
+          const idx = Number(itemIdOrIndex);
+          await ApiService.deleteWarningByIndex(sessionId, idx, resolveCtx());
+          patchSelectedSession({
+            ...state.selectedSession,
+            extractResult: {
+              ...state.selectedSession.extractResult,
+              warnings: state.selectedSession.extractResult.warnings.filter((_, index) => index !== idx),
+              warningSegmentIds: (state.selectedSession.extractResult.warningSegmentIds ?? []).filter(
+                (_, index) => index !== idx
+              ),
+            },
+          });
+        } else if (type === 'insight') {
+          await ApiService.deleteInsightBlock(sessionId, String(itemIdOrIndex), resolveCtx());
+          patchSelectedSession({
+            ...state.selectedSession,
+            extractResult: {
+              ...state.selectedSession.extractResult,
+              insightBlocks: (state.selectedSession.extractResult.insightBlocks ?? []).filter(
+                (item) => item.id !== String(itemIdOrIndex)
+              ),
+            },
+          });
+        } else if (type === 'action_item') {
+          await ApiService.deleteActionItem(sessionId, String(itemIdOrIndex), resolveCtx());
+          patchSelectedSession({
+            ...state.selectedSession,
+            extractResult: {
+              ...state.selectedSession.extractResult,
+              action_items: state.selectedSession.extractResult.action_items.filter(
+                (item) => item.id !== String(itemIdOrIndex)
+              ),
+            },
+          });
+        } else if (type === 'body_finding') {
+          await ApiService.deleteBodyFinding(sessionId, String(itemIdOrIndex), resolveCtx());
+          patchSelectedSession({
+            ...state.selectedSession,
+            bodyMapSnapshot: {
+              sessionId,
+              date: state.selectedSession.date,
+              findings: (state.selectedSession.bodyMapSnapshot?.findings ?? []).filter(
+                (item) => item.id !== String(itemIdOrIndex)
+              ),
+            },
+          });
+        } else if (type === 'dimension') {
+          await ApiService.deleteDimensionSummary(sessionId, String(itemIdOrIndex), resolveCtx());
+          patchSelectedSession({
+            ...state.selectedSession,
+            extractResult: {
+              ...state.selectedSession.extractResult,
+              dimensionSummaries: (state.selectedSession.extractResult.dimensionSummaries ?? []).filter(
+                (item) => item.id !== String(itemIdOrIndex)
+              ),
+            },
+          });
+        }
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    [handleApiError, patchSelectedSession, resolveCtx, state.selectedSession]
+  );
+
+  const quickAddStructuredFromTranscript = useCallback(
+    async (
+      sessionId: string,
+      segmentId: string,
+      selectedText: string,
+      type: StructuredItemType,
+      range?: { startChar: number; endChar: number }
+    ) => {
+      try {
+        const sourceRef = await ensureSourceRefForSegment(sessionId, segmentId, selectedText, range);
+        const sourceRefIds = sourceRef ? [sourceRef.id] : [];
+        await addStructuredItem(sessionId, type, { sourceRefIds, segmentIds: [segmentId] });
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    [addStructuredItem, ensureSourceRefForSegment, handleApiError]
+  );
+
   const toggleRecording = useCallback(async () => {
     if (state.recordingState === 'recording') {
       dispatch({ type: 'setRecordingState', payload: 'completed' });
@@ -360,10 +929,12 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       try {
         const appended = await ApiService.appendTranscriptSegment(state.selectedSession.id, segmentText, resolveCtx());
         if (!appended) return;
-        const incremental =
-          state.settings.mode === 'live'
-            ? await ApiService.incrementalExtract(state.selectedSession.id, appended.id, appended.text, resolveCtx())
-            : await LLMAdapter.generateIncremental(state.selectedSession, appended.id, appended.text, state.settings.mode);
+        const incremental = await ApiService.incrementalExtract(
+          state.selectedSession.id,
+          appended.id,
+          appended.text,
+          resolveCtx()
+        );
         const next: VisitSession = {
           ...state.selectedSession,
           transcript: [...state.selectedSession.transcript, appended],
@@ -391,7 +962,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
         handleApiError(error);
       }
     },
-    [handleApiError, patchSelectedSession, resolveCtx, state.selectedSession, state.settings.mode]
+    [handleApiError, patchSelectedSession, resolveCtx, state.selectedSession]
   );
 
   const runExtractAndReport = useCallback(async () => {
@@ -444,20 +1015,17 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
   const closeSettings = useCallback(() => dispatch({ type: 'setSettingsOpen', payload: false }), []);
   const openAddElder = useCallback(() => dispatch({ type: 'setAddElderOpen', payload: true }), []);
   const closeAddElder = useCallback(() => dispatch({ type: 'setAddElderOpen', payload: false }), []);
+  const setEditMode = useCallback((enabled: boolean) => dispatch({ type: 'setEditMode', payload: enabled }), []);
 
   const saveSettings = useCallback(
     (settings: Partial<AppSettings>) => {
       const merged = { ...state.settings, ...settings };
-      if (merged.mode === 'demo') {
-        merged.useMock = true;
-      } else if (merged.mode === 'live') {
-        merged.useMock = false;
-      }
       dispatch({ type: 'mergeSettings', payload: merged });
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       pushToast({ type: 'success', title: '设置已保存', description: '新设置已生效。' });
+      void initialize();
     },
-    [pushToast, state.settings]
+    [initialize, pushToast, state.settings]
   );
 
   useEffect(() => {
@@ -479,6 +1047,15 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       setActiveSegment,
       setActiveSourceRef,
       setCurrentPage,
+      updateElderFields,
+      updateTranscriptSegmentText,
+      updateInsightBlockFields,
+      updateWarningContent,
+      updateBodyFindingFields,
+      updateActionItemFields,
+      addStructuredItem,
+      deleteStructuredItem,
+      quickAddStructuredFromTranscript,
       toggleRecording,
       appendTranscriptAndGenerate,
       runExtractAndReport,
@@ -489,6 +1066,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       saveSettings,
       openAddElder,
       closeAddElder,
+      setEditMode,
       pushToast,
       removeToast,
     }),
@@ -510,6 +1088,16 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       setActiveSourceRef,
       setCurrentPage,
       setSearchKeyword,
+      setEditMode,
+      addStructuredItem,
+      deleteStructuredItem,
+      quickAddStructuredFromTranscript,
+      updateActionItemFields,
+      updateBodyFindingFields,
+      updateElderFields,
+      updateInsightBlockFields,
+      updateTranscriptSegmentText,
+      updateWarningContent,
       state,
       toggleActionItem,
       toggleRecording,

@@ -1,5 +1,4 @@
 export type RiskLevel = 'high' | 'medium' | 'low';
-export type AppMode = 'demo' | 'live';
 export type BodyPart =
   | 'head'
   | 'chest'
@@ -25,6 +24,7 @@ export type ToastType = 'success' | 'warning' | 'error' | 'info';
 
 export interface ElderProfile {
   id: string;
+  ifDemo?: boolean;
   name: string;
   age: number;
   gender: 'M' | 'F';
@@ -57,6 +57,15 @@ export interface ExtractDimension {
   risk: RiskLevel;
   details?: string[];
   /** 对应转写段落 id，用于左右联动定位 */
+  sourceSegmentIds?: string[];
+}
+
+export interface DimensionSummaryItem {
+  id: string;
+  dimension: string;
+  summary: string;
+  risk: RiskLevel;
+  details?: string[];
   sourceSegmentIds?: string[];
 }
 
@@ -113,11 +122,14 @@ export interface ExtractResult {
   warningSegmentIds?: string[][];
   /** 结构化块（用于右侧生成式块渲染） */
   insightBlocks?: InsightBlock[];
+  /** 动态维度汇总（支持新增/删除） */
+  dimensionSummaries?: DimensionSummaryItem[];
 }
 
 export interface VisitSession {
   id: string;
   elderId: string;
+  ifDemo?: boolean;
   date: string;
   duration: number; // in seconds
   status: RecordingState;
@@ -163,8 +175,15 @@ export interface AppSettings {
   sampleRate: '16k' | '44.1k';
   reportLanguage: 'zh-HK' | 'zh-HK+en';
   reportTemplate: 'standard' | 'detailed';
-  useMock: boolean;
   apiBaseUrl: string;
+  showDemoData: boolean;
   autoGenerateReport: boolean;
-  mode: AppMode;
+}
+
+export type StructuredItemType = 'warning' | 'insight' | 'action_item' | 'body_finding' | 'dimension';
+
+export interface FieldOperationMeta {
+  operationId: string;
+  fieldPath: string;
+  previousValue: unknown;
 }

@@ -16,6 +16,7 @@ export default function Sidebar() {
       sessionsByElder,
       calendarDays,
       isAddElderOpen,
+      isEditMode,
       settings,
     },
     selectElder,
@@ -24,6 +25,7 @@ export default function Sidebar() {
     openAddElder,
     closeAddElder,
     addElder,
+    updateElderFields,
   } = useAppStore();
   const [query, setQuery] = useState('');
   const [activeTag, setActiveTag] = useState<string>('');
@@ -153,6 +155,29 @@ export default function Sidebar() {
                   <span>{elder.age}岁</span>
                   <span>{elder.lastVisitDate ?? '-'}</span>
                 </div>
+                {isEditMode && elder.id === selectedElderId ? (
+                  <div className="mt-2 space-y-1 rounded-md border border-slate-200 bg-white p-2">
+                    <input
+                      className="w-full rounded border border-slate-200 px-2 py-1 text-xs"
+                      value={elder.name}
+                      onChange={(event) => updateElderFields(elder.id, { name: event.target.value })}
+                      placeholder="长者姓名"
+                    />
+                    <input
+                      className="w-full rounded border border-slate-200 px-2 py-1 text-xs"
+                      value={(elder.tags ?? []).join(',')}
+                      onChange={(event) =>
+                        updateElderFields(elder.id, {
+                          tags: event.target.value
+                            .split(',')
+                            .map((tag) => tag.trim())
+                            .filter(Boolean),
+                        })
+                      }
+                      placeholder="标签，逗号分隔"
+                    />
+                  </div>
+                ) : null}
                 {!!elder.tags?.length && (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {elder.tags.slice(0, 3).map((tag) => (

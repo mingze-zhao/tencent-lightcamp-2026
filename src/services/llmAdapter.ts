@@ -1,4 +1,4 @@
-import type { AppMode, BodyFinding, InsightBlock, RiskLevel, SourceRef, VisitSession } from '@/types';
+import type { BodyFinding, InsightBlock, RiskLevel, SourceRef, VisitSession } from '@/types';
 
 export interface IncrementalExtractResult {
   sourceRef: SourceRef;
@@ -43,12 +43,8 @@ export const LLMAdapter = {
     session: VisitSession,
     segmentId: string,
     segmentText: string,
-    mode: AppMode
+    _mode?: 'db'
   ): Promise<IncrementalExtractResult> {
-    if (mode === 'live') {
-      // 真实接入占位：后续可替换为调用 /api/llm/incremental-extract。
-      throw new Error('实机模式增量抽取接口未接入，请配置后端 /api/llm/incremental-extract');
-    }
     const clipped = segmentText.length > 20 ? segmentText.slice(0, 20) : segmentText;
     const risk = inferRisk(segmentText);
     const type = inferType(segmentText);
