@@ -24,7 +24,7 @@ export default function ElderSessionTree({ sessions, selectedSessionId, onSelect
               aria-label={`切换采访 ${session.date}`}
             >
               <span>{session.date}</span>
-              <span className="text-[10px] text-slate-400">{Math.round(session.duration / 60)} 分钟</span>
+              <span className="text-xs text-slate-400">{Math.round(session.duration / 60)} 分钟</span>
             </button>
           ))
         )}

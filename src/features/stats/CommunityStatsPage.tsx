@@ -225,31 +225,31 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
           <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="absolute left-0 top-0 h-1 w-full bg-rose-500" />
             <div className="text-xs font-medium text-slate-500">当前高危人数</div>
-            <div className="mt-2 text-3xl font-light text-slate-800">{kpis?.highRiskElders ?? 0}</div>
-            <div className="mt-1 text-[11px] text-slate-400">占比 {formatPercent(kpis?.highRiskElders ?? 0, kpis?.elderTotal ?? 0)}</div>
+            <div className="mt-2 text-2xl font-bold text-slate-800">{kpis?.highRiskElders ?? 0}</div>
+            <div className="mt-1 text-xs text-slate-400">占比 {formatPercent(kpis?.highRiskElders ?? 0, kpis?.elderTotal ?? 0)}</div>
           </div>
           <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="absolute left-0 top-0 h-1 w-full bg-amber-500" />
             <div className="text-xs font-medium text-slate-500">活跃问题人数</div>
-            <div className="mt-2 text-3xl font-light text-slate-800">{kpis?.activeIssueElders ?? 0}</div>
-            <div className="mt-1 text-[11px] text-slate-400">新增问题 {kpis?.newIssueCount ?? 0}</div>
+            <div className="mt-2 text-2xl font-bold text-slate-800">{kpis?.activeIssueElders ?? 0}</div>
+            <div className="mt-1 text-xs text-slate-400">新增问题 {kpis?.newIssueCount ?? 0}</div>
           </div>
           <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="absolute left-0 top-0 h-1 w-full bg-teal-500" />
             <div className="text-xs font-medium text-slate-500">痊愈/缓解人数</div>
-            <div className="mt-2 text-3xl font-light text-slate-800">{kpis?.resolvedIssueElders ?? 0}</div>
-            <div className="mt-1 text-[11px] text-slate-400">低危 {kpis?.lowRiskElders ?? 0}</div>
+            <div className="mt-2 text-2xl font-bold text-slate-800">{kpis?.resolvedIssueElders ?? 0}</div>
+            <div className="mt-1 text-xs text-slate-400">低危 {kpis?.lowRiskElders ?? 0}</div>
           </div>
           <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="absolute left-0 top-0 h-1 w-full bg-slate-300" />
             <div className="text-xs font-medium text-slate-500">预警总量</div>
-            <div className="mt-2 text-3xl font-light text-slate-800">{kpis?.warningCount ?? 0}</div>
-            <div className="mt-1 text-[11px] text-slate-400">中危 {kpis?.mediumRiskElders ?? 0}</div>
+            <div className="mt-2 text-2xl font-bold text-slate-800">{kpis?.warningCount ?? 0}</div>
+            <div className="mt-1 text-xs text-slate-400">中危 {kpis?.mediumRiskElders ?? 0}</div>
           </div>
           <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="absolute left-0 top-0 h-1 w-full bg-slate-300" />
             <div className="text-xs font-medium text-slate-500">行动项闭环率</div>
-            <div className="mt-2 text-3xl font-light text-slate-800">
+            <div className="mt-2 text-2xl font-bold text-slate-800">
               {Math.round(
                 ((kpis?.completedActionCount ?? 0) /
                   Math.max((kpis?.completedActionCount ?? 0) + (kpis?.pendingActionCount ?? 0), 1)) *
@@ -257,7 +257,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
               )}
               %
             </div>
-            <div className="mt-1 text-[11px] text-slate-400">
+            <div className="mt-1 text-xs text-slate-400">
               待办 {kpis?.pendingActionCount ?? 0} · 完成 {kpis?.completedActionCount ?? 0}
             </div>
           </div>
@@ -267,8 +267,8 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="mb-3 flex items-center justify-between">
-            <div className="text-sm font-semibold text-slate-700">社区风险地图（卫星底图）</div>
-            <div className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
+            <div className="text-base font-bold text-slate-700">社区风险地图（卫星地图）</div>
+            <div className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
               {dashboard?.window ?? '90d'} · {dashboard?.includeDemo ? '演示+真实' : '真实'}
             </div>
           </div>
@@ -298,7 +298,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
                   }}
                 >
                   <Tooltip direction="top" offset={[0, -6]} permanent>
-                    <div className="text-[11px]">
+                    <div className="text-xs">
                       <div className="font-semibold">{item.region}</div>
                       <div>
                         高危 {item.highRiskCount}/{item.elderCount} ({Math.round(item.ratio * 100)}%)
@@ -309,14 +309,14 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
               ))}
             </MapContainer>
           </div>
-          <div className="mt-3 flex items-center gap-4 text-[11px] text-slate-500">
+          <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-600"></span>高风险密度高</span>
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-600"></span>中风险密度</span>
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-teal-600"></span>风险可控</span>
           </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="mb-3 text-sm font-semibold text-slate-700">风险趋势（{dashboard?.granularity ?? 'week'}）</div>
+          <div className="mb-3 text-base font-bold text-slate-700">风险趋势（{dashboard?.granularity ?? 'week'}）</div>
           {dashboard?.trends.length ? (
             <div className="rounded-lg border border-slate-100 bg-white p-2">
               <div className="h-[300px] w-full">
@@ -337,9 +337,9 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="bucket" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                     <YAxis
-                      tick={{ fontSize: 11, fill: '#94a3b8' }}
+                      tick={{ fontSize: 12, fill: '#94a3b8' }}
                       axisLine={false}
                       tickLine={false}
                       domain={[0, Math.max(2, Math.ceil(trendMax * 1.2))]}
@@ -352,7 +352,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
                         fontSize: 12,
                       }}
                     />
-                    <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
+                    <Legend wrapperStyle={{ fontSize: 12, color: '#64748b' }} />
                     <Area type="monotone" dataKey="highRisk" name="高危人数" stroke="#e11d48" fill="url(#trendHigh)" strokeWidth={2} />
                     <Area type="monotone" dataKey="activeIssue" name="活跃问题人数" stroke="#d97706" fill="url(#trendActive)" strokeWidth={2} />
                     <Area type="monotone" dataKey="warning" name="预警数量" stroke="#0f766e" fill="url(#trendWarn)" strokeWidth={2} />
@@ -367,7 +367,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
       </div>
 
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-4 text-sm font-semibold text-slate-800">人体部位热力图（前后视）</div>
+        <div className="mb-4 text-base font-bold text-slate-800">人体部位热力图（前后视）</div>
         <div className="grid gap-6 xl:grid-cols-[1fr_1fr_280px]">
           <div className="flex flex-col relative rounded-xl border border-slate-100 bg-slate-50/30 p-4 overflow-hidden">
             <div className="mb-4 text-center text-xs font-medium text-slate-500 relative z-10">正面</div>
@@ -384,7 +384,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
                 const pos = bodyLabelPositions[s.part].anterior!;
                 return (
                   <div key={`front-lbl-${s.part}`} className="absolute pointer-events-none flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2" style={{ top: pos.top, left: pos.left }}>
-                    <div className="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 shadow-sm text-[10px] font-medium text-slate-700 whitespace-nowrap">
+                    <div className="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 shadow-sm text-xs font-medium text-slate-700 whitespace-nowrap">
                       {partLabelMap[s.part]}
                     </div>
                   </div>
@@ -407,7 +407,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
                 const pos = bodyLabelPositions[s.part].posterior!;
                 return (
                   <div key={`back-lbl-${s.part}`} className="absolute pointer-events-none flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2" style={{ top: pos.top, left: pos.left }}>
-                    <div className="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 shadow-sm text-[10px] font-medium text-slate-700 whitespace-nowrap">
+                    <div className="px-1.5 py-0.5 rounded bg-white/90 border border-slate-200 shadow-sm text-xs font-medium text-slate-700 whitespace-nowrap">
                       {partLabelMap[s.part]}
                     </div>
                   </div>
@@ -419,17 +419,17 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
             {sorted.map((item) => (
               <div key={item.part} className={`rounded-lg border px-3 py-2.5 transition-all ${intensityClass(item.rate)}`}>
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">{partLabelMap[item.part]}</div>
-                    <div className="text-[11px] font-medium opacity-90">{Math.round(item.rate * 100)}%</div>
+                    <div className="text-sm font-semibold">{partLabelMap[item.part]}</div>
+                    <div className="text-xs font-medium opacity-90">{Math.round(item.rate * 100)}%</div>
                   </div>
-                  <div className="mt-1 text-[10px] opacity-80 flex items-center justify-between">
+                  <div className="mt-1 text-xs opacity-80 flex items-center justify-between">
                     <span>活跃 {item.activeCount ?? 0}</span>
                     <span>痊愈 {item.resolvedCount ?? 0}</span>
                   </div>
                   {item.topLabels && item.topLabels.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {item.topLabels.map(l => (
-                        <span key={l.name} className="inline-flex items-center rounded-sm bg-white/60 px-1.5 py-0.5 text-[9px] font-medium text-slate-700">
+                        <span key={l.name} className="inline-flex items-center rounded-sm bg-white/60 px-1.5 py-0.5 text-xs font-medium text-slate-700">
                           {l.name} {l.count > 1 && <span className="ml-0.5 opacity-60">({l.count})</span>}
                         </span>
                       ))}
@@ -442,7 +442,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
       </div>
 
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-4 text-sm font-semibold text-slate-800">多维筛选 <span className="text-slate-400 font-normal mx-1">/</span> 命中个案（排查视角）</div>
+        <div className="mb-4 text-base font-bold text-slate-800">多维筛选 <span className="text-slate-400 font-normal mx-1">/</span> 命中个案（排查视角）</div>
         <div className="mb-4 grid grid-cols-2 gap-3 text-xs md:grid-cols-7">
           <input
             className="rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-slate-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
@@ -484,12 +484,12 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
               <option value="demo">数据：演示</option>
               <option value="mixed">数据：混合</option>
             </select>
-          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-[12px] text-slate-700 hover:bg-slate-100 transition-all">
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-700 hover:bg-slate-100 transition-all">
             <input type="checkbox" className="accent-blue-600 w-3.5 h-3.5" checked={onlyUnresolved} onChange={(event) => setOnlyUnresolved(event.target.checked)} />
             仅看未解决
           </label>
           <button
-            className={`rounded-lg border px-3 py-2 text-[12px] font-medium transition-all ${
+            className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
               onlyHighRiskOver7d ? 'border-rose-200 bg-rose-50 text-rose-700 shadow-inner' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm'
             }`}
             onClick={() => setOnlyHighRiskOver7d((prev) => !prev)}
@@ -506,30 +506,30 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
               <div key={row.elderId} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-semibold text-slate-800">{row.elderName}</div>
-                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${riskChip(row.risk)}`}>{row.risk}</span>
+                  <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${riskChip(row.risk)}`}>{row.risk}</span>
                 </div>
-                <div className="mt-1.5 text-[11px] text-slate-500">
+                <div className="mt-1.5 text-xs text-slate-500">
                   {row.region} <span className="mx-1 text-slate-300">|</span> 最近会话 {row.lastSessionDate ?? '-'} <span className="mx-1 text-slate-300">|</span> 数据 {row.dataScope}
                 </div>
-                <div className="mt-1.5 text-[11px] text-slate-700">
+                <div className="mt-1.5 text-xs text-slate-700">
                   活跃 <span className="font-medium text-amber-600">{row.activeIssueCount}</span> · 预警 <span className="font-medium text-rose-600">{row.warningCount}</span> · 待办 {row.pendingActionCount}
                 </div>
-                <div className="mt-1 text-[11px] text-slate-500">
+                <div className="mt-1 text-xs text-slate-500">
                   已解决 {row.resolvedIssueCount} · 已完成 {row.completedActionCount} · 挂起最久 {row.oldestUnresolvedDays} 天
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {row.involvedParts.slice(0, 4).map((part) => (
-                    <span key={`${row.elderId}-${part}`} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600 border border-slate-200">
+                    <span key={`${row.elderId}-${part}`} className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600 border border-slate-200">
                       {part === 'none' ? '-' : partLabelMap[part]}
                     </span>
                   ))}
                 </div>
-                <div className="mt-2 text-[10px] text-slate-400">
+                <div className="mt-2 text-xs text-slate-400">
                   慢病：{row.chronicDiseases.length ? row.chronicDiseases.join(' / ') : '未标注'}
                 </div>
                 <div className="mt-3 flex gap-2">
                   <button
-                    className="flex-1 rounded-lg border border-slate-200 bg-slate-50 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                    className="flex-1 rounded-lg border border-slate-200 bg-slate-50 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                     onClick={() => {
                       setCurrentPage('archive');
                       void selectElder(row.elderId);
@@ -538,7 +538,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
                     人员档案
                   </button>
                   <button
-                    className="flex-1 rounded-lg border border-blue-200 bg-blue-50 py-1.5 text-[11px] font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    className="flex-1 rounded-lg border border-blue-200 bg-blue-50 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
                     onClick={() => {
                       setCurrentPage('workbench');
                       void selectElder(row.elderId).then(() => {
@@ -557,7 +557,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
 
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-2">
-          <div className="mb-4 text-sm font-semibold text-slate-800">Top 共性问题</div>
+          <div className="mb-4 text-base font-bold text-slate-800">Top 共性问题</div>
           {sorted.length === 0 ? (
             <div className="text-sm text-slate-500">暂无统计数据。</div>
           ) : (
@@ -576,7 +576,7 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
                       style={{ width: `${topRate > 0 ? (item.rate / topRate) * 100 : 0}%` }}
                     />
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+                  <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
                     <span>活跃问题 <span className="font-medium text-slate-700">{item.activeCount ?? item.issueCount}</span></span>
                     <span>已缓解 <span className="font-medium text-slate-700">{item.resolvedCount ?? 0}</span></span>
                   </div>
@@ -586,15 +586,15 @@ export default function CommunityStatsPage({ stats, dashboard }: CommunityStatsP
           )}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-4 text-sm font-semibold text-slate-800">慢病分层视图</div>
+          <div className="mb-4 text-base font-bold text-slate-800">慢病分层视图</div>
           <div className="space-y-3">
             {(dashboard?.chronicStats ?? []).slice(0, 10).map((item) => (
               <div key={item.disease} className="rounded-lg border border-slate-100 bg-slate-50/50 px-4 py-3 transition-colors hover:bg-slate-50">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium text-slate-700">{item.disease}</span>
-                  <span className="text-[11px] text-slate-500">长者 <span className="font-medium text-slate-700">{item.elderCount}</span></span>
+                  <span className="text-xs text-slate-500">长者 <span className="font-medium text-slate-700">{item.elderCount}</span></span>
                 </div>
-                <div className="mt-2 text-[11px] text-slate-500">
+                <div className="mt-2 text-xs text-slate-500">
                   高危 <span className="font-medium text-rose-600">{item.highRiskCount}</span> <span className="mx-1 text-slate-300">|</span> 活跃问题 <span className="font-medium text-amber-600">{item.activeIssueCount}</span>
                 </div>
               </div>

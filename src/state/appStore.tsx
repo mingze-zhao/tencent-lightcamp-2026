@@ -269,8 +269,9 @@ function reducer(state: AppState, action: AppAction): AppState {
 
 interface AppStoreValue {
   state: AppState;
-  initialize: () => Promise<void>;
-  selectElder: (elderId: string) => Promise<void>;
+  initialize: (options?: { preserveSelection?: boolean }) => Promise<void>;
+  selectElder: (elderId: string, override?: { apiBaseUrl: string; showDemoData: boolean }, preferredDate?: string) => Promise<void>;
+  loadSessionsForElder: (elderId: string) => Promise<void>;
   selectDate: (date: string) => void;
   selectSession: (sessionId: string) => void;
   setSearchKeyword: (keyword: string) => void;
@@ -371,14 +372,31 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'setCommunityStats', payload: dashboard.bodyPartStats });
   }, [resolveCtx]);
 
+  const loadSessionsForElder = useCallback(
+    async (elderId: string) => {
+      try {
+        const sessions = await ApiService.getSessionsByElder(elderId, resolveCtx());
+        dispatch({ type: 'setSessionsByElder', payload: { elderId, sessions } });
+      } catch (error) {
+        handleApiError(error);
+      }
+    },
+    [handleApiError, resolveCtx]
+  );
+
   const selectElder = useCallback(
-    async (elderId: string, override?: { apiBaseUrl: string; showDemoData: boolean }) => {
+    async (
+      elderId: string,
+      override?: { apiBaseUrl: string; showDemoData: boolean },
+      preferredDate?: string
+    ) => {
       dispatch({ type: 'setSelectedElder', payload: elderId });
       dispatch({ type: 'setStatus', payload: 'loading' });
       try {
         const sessions = await ApiService.getSessionsByElder(elderId, resolveCtx(override));
         dispatch({ type: 'setSessionsByElder', payload: { elderId, sessions } });
-        const next = pickSessionByDate(sessions, state.selectedDate);
+        const dateToPick = preferredDate ?? state.selectedDate;
+        const next = pickSessionByDate(sessions, dateToPick);
         dispatch({ type: 'setSelectedSession', payload: next });
         dispatch({ type: 'setSelectedSessionId', payload: next?.id });
         dispatch({ type: 'setSelectedDate', payload: next?.date });
@@ -393,34 +411,38 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
     [handleApiError, resolveCtx, state.selectedDate]
   );
 
-  const initialize = useCallback(async () => {
-    dispatch({ type: 'setStatus', payload: 'loading' });
-    try {
-      const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
-      if (stored) {
-        dispatch({ type: 'mergeSettings', payload: JSON.parse(stored) as Partial<AppSettings> });
+  const initialize = useCallback(
+    async (options?: { preserveSelection?: boolean }) => {
+      const preserveSelection = options?.preserveSelection ?? false;
+      dispatch({ type: 'setStatus', payload: 'loading' });
+      try {
+        const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+        if (stored) {
+          dispatch({ type: 'mergeSettings', payload: JSON.parse(stored) as Partial<AppSettings> });
+        }
+        const override = stored
+          ? {
+              apiBaseUrl: (JSON.parse(stored) as Partial<AppSettings>).apiBaseUrl ?? '',
+              showDemoData: (JSON.parse(stored) as Partial<AppSettings>).showDemoData ?? true,
+            }
+          : undefined;
+        const elders = await ApiService.getElders(resolveCtx(override));
+        const calendar = await ApiService.getCalendarDays(resolveCtx(override));
+        dispatch({ type: 'setElders', payload: elders });
+        dispatch({ type: 'setCalendarDays', payload: calendar });
+        if (elders.length > 0 && !preserveSelection) {
+          await selectElder(elders[0].id, override);
+        } else {
+          dispatch({ type: 'setStatus', payload: 'ready' });
+        }
+        await refreshCommunityStats(override);
+      } catch (error) {
+        dispatch({ type: 'setStatus', payload: 'error' });
+        handleApiError(error);
       }
-      const override = stored
-        ? {
-            apiBaseUrl: (JSON.parse(stored) as Partial<AppSettings>).apiBaseUrl ?? '',
-            showDemoData: (JSON.parse(stored) as Partial<AppSettings>).showDemoData ?? true,
-          }
-        : undefined;
-      const elders = await ApiService.getElders(resolveCtx(override));
-      const calendar = await ApiService.getCalendarDays(resolveCtx(override));
-      dispatch({ type: 'setElders', payload: elders });
-      dispatch({ type: 'setCalendarDays', payload: calendar });
-      if (elders.length > 0) {
-        await selectElder(elders[0].id, override);
-      } else {
-        dispatch({ type: 'setStatus', payload: 'ready' });
-      }
-      await refreshCommunityStats(override);
-    } catch (error) {
-      dispatch({ type: 'setStatus', payload: 'error' });
-      handleApiError(error);
-    }
-  }, [handleApiError, refreshCommunityStats, resolveCtx, selectElder]);
+    },
+    [handleApiError, refreshCommunityStats, resolveCtx, selectElder]
+  );
 
   const selectDate = useCallback(
     (date: string) => {
@@ -1082,7 +1104,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       dispatch({ type: 'mergeSettings', payload: merged });
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       pushToast({ type: 'success', title: '设置已保存', description: '新设置已生效。' });
-      void initialize();
+      void initialize({ preserveSelection: true });
     },
     [initialize, pushToast, state.settings]
   );
@@ -1100,6 +1122,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       state,
       initialize,
       selectElder,
+      loadSessionsForElder,
       selectDate,
       selectSession,
       setSearchKeyword,
@@ -1147,6 +1170,7 @@ export function AppStoreProvider({ children }: PropsWithChildren) {
       saveSettings,
       selectDate,
       selectElder,
+      loadSessionsForElder,
       selectSession,
       setActiveSegment,
       setActiveSourceRef,

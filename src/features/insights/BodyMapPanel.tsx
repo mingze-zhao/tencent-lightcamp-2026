@@ -184,7 +184,7 @@ export default function BodyMapPanel({
               return (
                 <button
                   key={item.part}
-                  className={`pointer-events-auto absolute ${item.className} rounded-full border px-2 py-0.5 text-[10px] ${
+                  className={`pointer-events-auto absolute ${item.className} rounded-full border px-2 py-0.5 text-xs ${
                     statusClassMap[finding.status as keyof typeof statusClassMap]
                   }`}
                   onClick={() => onSelectFinding?.(finding)}
@@ -214,13 +214,13 @@ export default function BodyMapPanel({
               {isEditMode ? (
                 <div className="mt-1 space-y-1">
                   <input
-                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-700"
+                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-700"
                     value={finding.label}
                     onChange={(event) => onEditFinding?.(finding.id, { label: event.target.value })}
                     onClick={(event) => event.stopPropagation()}
                   />
                   <select
-                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-700"
+                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-700"
                     value={finding.status}
                     onChange={(event) =>
                       onEditFinding?.(finding.id, { status: event.target.value as 'new' | 'ongoing' | 'resolved' })
@@ -232,7 +232,7 @@ export default function BodyMapPanel({
                     <option value="resolved">resolved</option>
                   </select>
                   <button
-                    className="w-full rounded border border-red-200 bg-red-50 px-1.5 py-1 text-[11px] text-red-700"
+                    className="w-full rounded border border-red-200 bg-red-50 px-1.5 py-1 text-xs text-red-700"
                     onClick={(event) => {
                       event.stopPropagation();
                       onDeleteFinding?.(finding.id);
@@ -249,7 +249,7 @@ export default function BodyMapPanel({
         })}
       </div>
       {hideLegend ? null : (
-        <div className="mt-3 flex gap-2 text-[10px] text-slate-600">
+        <div className="mt-3 flex gap-2 text-xs text-slate-600">
           <span className="rounded bg-red-100 px-1.5 py-0.5">新发</span>
           <span className="rounded bg-amber-100 px-1.5 py-0.5">持续</span>
           <span className="rounded bg-emerald-100 px-1.5 py-0.5">痊愈</span>

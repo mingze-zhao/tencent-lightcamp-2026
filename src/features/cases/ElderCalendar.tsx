@@ -7,6 +7,7 @@ interface ElderCalendarProps {
   elders: ElderProfile[];
   selectedDate?: string;
   onSelectDate: (date: string) => void;
+  compact?: boolean;
   expandedDate?: string | null;
   dayTimelineItems?: DailySessionEntry[];
   dayTimelineLoading?: boolean;
@@ -45,6 +46,7 @@ export default function ElderCalendar({
   elders,
   selectedDate,
   onSelectDate,
+  compact = false,
   expandedDate,
   dayTimelineItems = [],
   dayTimelineLoading = false,
@@ -82,10 +84,10 @@ export default function ElderCalendar({
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50">
       <div className="border-b border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600">
-        采访日历入口（有采访才高亮）
+        采访日历主入口（点击日期查看当日采访名单）
       </div>
-      <div className="p-1.5">
-        <div className="mb-1.5 flex items-center justify-between px-1">
+      <div className={compact ? 'p-1' : 'p-1.5'}>
+        <div className={`${compact ? 'mb-1' : 'mb-1.5'} flex items-center justify-between px-1`}>
           <button
             className="rounded p-1 text-slate-500 hover:bg-slate-200"
             onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
@@ -93,8 +95,8 @@ export default function ElderCalendar({
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <div className="text-sm font-semibold text-slate-700">
-            {currentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+          <div className={`${compact ? 'text-sm' : 'text-base'} font-bold`}>
+            {currentMonth.toLocaleString('zh-CN', { month: 'long', year: 'numeric' })}
           </div>
           <button
             className="rounded p-1 text-slate-500 hover:bg-slate-200"
@@ -104,7 +106,7 @@ export default function ElderCalendar({
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-slate-500">
+        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-500">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => (
             <div key={label} className="py-0.5">
               {label}
@@ -120,12 +122,8 @@ export default function ElderCalendar({
                 <div className="grid grid-cols-7 gap-1">
                   {weekCells.map((cell) => {
                     const active = selectedDate === cell.key;
-                    const label =
-                      cell.names.length === 0
-                        ? ''
-                        : cell.names.length <= 2
-                        ? cell.names.join('、')
-                        : `${cell.names.slice(0, 2).join('、')}+${cell.names.length - 2}`;
+                    const labelInitials = cell.names.slice(0, 3).map((name) => name.slice(0, 1));
+                    const totalCount = cell.names.length;
                     const riskClass =
                       cell.dayMaxRisk === 'high'
                         ? active
@@ -143,7 +141,8 @@ export default function ElderCalendar({
                         key={cell.key}
                         onClick={() => cell.hasInterview && onSelectDate(cell.key)}
                         disabled={!cell.hasInterview}
-                        className={`min-h-[40px] rounded-md border px-1 py-0.5 text-left ${
+                        title={cell.names.length > 0 ? `采访名单：${cell.names.join('、')}` : undefined}
+                        className={`${compact ? 'h-[54px]' : 'h-[68px]'} rounded-md border px-1 py-1 text-center flex flex-col items-center justify-center transition-colors ${
                           !cell.inCurrentMonth
                             ? 'border-transparent bg-transparent text-slate-300'
                             : cell.hasInterview
@@ -151,8 +150,17 @@ export default function ElderCalendar({
                             : 'border-slate-200 bg-white text-slate-400'
                         }`}
                       >
-                        <div className="text-[11px] font-semibold">{cell.date.getDate()}</div>
-                        <div className="mt-0.5 line-clamp-1 text-[9px]">{label}</div>
+                        <div className={`${compact ? 'text-base' : 'text-lg'} font-bold leading-none`}>{cell.date.getDate()}</div>
+                        {totalCount > 0 ? (
+                          <>
+                            <div className={`${compact ? 'mt-0.5 text-[9px]' : 'mt-1 text-[10px]'} font-medium leading-none tracking-widest text-slate-700`}>
+                              {labelInitials.join('')}
+                            </div>
+                            <div className={`${compact ? 'text-[8px]' : 'mt-0.5 text-[9px]'} text-slate-500 scale-90 origin-top`}>
+                              等{totalCount}人
+                            </div>
+                          </>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -160,21 +168,20 @@ export default function ElderCalendar({
                 {weekHasExpandedDate ? (
                   <div className="rounded-md border border-slate-200 bg-white p-1.5">
                     <div className="mb-1 flex items-center justify-between">
-                      <div className="text-[11px] font-semibold text-slate-700">当日日程 · {expandedDate}</div>
+                      <div className="text-sm font-semibold text-slate-700">当日日程 · {expandedDate}</div>
                       <button
-                        className="rounded px-1 py-0.5 text-[10px] text-slate-500 hover:bg-slate-100"
+                        className="rounded px-1 py-0.5 text-xs text-slate-500 hover:bg-slate-100"
                         onClick={() => onCloseExpanded?.()}
                       >
                         收起
                       </button>
                     </div>
                     {dayTimelineLoading ? (
-                      <div className="text-[11px] text-slate-500">加载中...</div>
+                      <div className="text-xs text-slate-500">加载中...</div>
                     ) : dayTimelineItems.length === 0 ? (
-                      <div className="text-[11px] text-slate-500">该日暂无采访会话。</div>
+                      <div className="text-xs text-slate-500">该日暂无采访会话。</div>
                     ) : (
-                      <div className="overflow-x-auto pb-1">
-                        <div className="flex min-w-max gap-1.5">
+                      <div className="max-h-40 space-y-1 overflow-y-auto pr-1">
                           {dayTimelineItems.map((item, idx) => {
                             const elderRisk = riskMap[item.elderId] ?? 'low';
                             const timelineClass =
@@ -186,18 +193,17 @@ export default function ElderCalendar({
                             return (
                               <button
                                 key={item.sessionId}
-                                className={`w-28 shrink-0 rounded border px-1.5 py-1 text-left ${timelineClass}`}
+                                className={`w-full rounded border px-2 py-1.5 text-left ${timelineClass}`}
                                 onClick={() => onPickDayTimelineItem?.(item)}
                               >
-                                <div className="text-[10px] font-semibold text-slate-600">时段 {idx + 1}</div>
-                                <div className="mt-0.5 text-[11px] font-medium text-slate-800">{item.elderName}</div>
-                                <div className="mt-0.5 text-[10px] text-slate-500">
+                                <div className="text-xs font-semibold text-slate-600">时段 {idx + 1}</div>
+                                <div className="mt-0.5 text-sm font-semibold text-slate-800 break-all">{item.elderName}</div>
+                                <div className="mt-0.5 text-xs text-slate-500">
                                   {Math.round(item.duration / 60)}分 · 预警{item.warningCount}
                                 </div>
                               </button>
                             );
                           })}
-                        </div>
                       </div>
                     )}
                   </div>

@@ -25,7 +25,7 @@ export default function VisitTimelineSlider({ sessions, selectedSessionId, onSel
         }}
         className="w-full"
       />
-      <div className="mt-1 flex justify-between text-[10px] text-slate-500">
+      <div className="mt-1 flex justify-between text-xs text-slate-500">
         <span>{sorted[0].date}</span>
         <span>{sorted[sorted.length - 1]?.date}</span>
       </div>

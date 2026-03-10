@@ -45,7 +45,7 @@ export default function AppShell() {
       style={{ fontSize: `${settings.fontScale}%` }}
     >
       {/* Left Sidebar: Cases / Elders List */}
-      <div className="w-80 border-r border-slate-200 bg-white shadow-sm z-10 flex flex-col flex-shrink-0">
+      <div className="w-72 border-r border-slate-200 bg-white shadow-sm z-10 flex flex-col flex-shrink-0">
         <Sidebar />
       </div>
 
@@ -54,19 +54,19 @@ export default function AppShell() {
         <div className="flex min-h-0 w-full flex-col">
           <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
             <button
-              className={`rounded-md px-3 py-1.5 text-sm ${currentPage === 'workbench' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium ${currentPage === 'workbench' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}
               onClick={() => setCurrentPage('workbench')}
             >
               个案工作台
             </button>
             <button
-              className={`rounded-md px-3 py-1.5 text-sm ${currentPage === 'community' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium ${currentPage === 'community' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}
               onClick={() => setCurrentPage('community')}
             >
               社区统计
             </button>
             <button
-              className={`rounded-md px-3 py-1.5 text-sm ${currentPage === 'archive' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium ${currentPage === 'archive' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}
               onClick={() => setCurrentPage('archive')}
             >
               人员档案
@@ -80,7 +80,7 @@ export default function AppShell() {
                   : '已同步'}
               </span>
               <button
-                className={`rounded-md px-3 py-1.5 text-sm ${isEditMode ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium ${isEditMode ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}
                 onClick={() => setEditMode(!isEditMode)}
                 aria-label="切换编辑模式"
               >
