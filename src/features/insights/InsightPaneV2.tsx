@@ -5,6 +5,7 @@ import { useAppStore } from '@/state/appStore';
 import BodyMapPanel from './BodyMapPanel';
 import VisitTimelineSlider from './VisitTimelineSlider';
 import type { InsightBlock, SourceRef } from '@/types';
+import DimensionSummariesBoard from '@/features/shared/DimensionSummariesBoard';
 
 const riskBadgeMap = {
   high: 'bg-red-100 text-red-700',
@@ -57,6 +58,52 @@ export default function InsightPaneV2() {
     [sourceRefs]
   );
   const insightBlocks: InsightBlock[] = useMemo(() => extract?.insightBlocks ?? [], [extract]);
+  const dimensionSummaries = useMemo(() => {
+    if (!extract) return [];
+    if (extract.dimensionSummaries && extract.dimensionSummaries.length > 0) return extract.dimensionSummaries;
+    return [
+      {
+        id: 'fallback-medication',
+        dimension: 'medication',
+        summary: extract.medication.summary,
+        risk: extract.medication.risk,
+        details: extract.medication.details,
+        sourceSegmentIds: extract.medication.sourceSegmentIds,
+      },
+      {
+        id: 'fallback-diet',
+        dimension: 'diet',
+        summary: extract.diet.summary,
+        risk: extract.diet.risk,
+        details: extract.diet.details,
+        sourceSegmentIds: extract.diet.sourceSegmentIds,
+      },
+      {
+        id: 'fallback-emotion',
+        dimension: 'emotion',
+        summary: extract.emotion.summary,
+        risk: extract.emotion.risk,
+        details: extract.emotion.details,
+        sourceSegmentIds: extract.emotion.sourceSegmentIds,
+      },
+      {
+        id: 'fallback-adl',
+        dimension: 'adl',
+        summary: extract.adl.summary,
+        risk: extract.adl.risk,
+        details: extract.adl.details,
+        sourceSegmentIds: extract.adl.sourceSegmentIds,
+      },
+      {
+        id: 'fallback-social',
+        dimension: 'social_support',
+        summary: extract.social_support.summary,
+        risk: extract.social_support.risk,
+        details: extract.social_support.details,
+        sourceSegmentIds: extract.social_support.sourceSegmentIds,
+      },
+    ];
+  }, [extract]);
   const sourceRefsBySegment = useMemo(
     () =>
       sourceRefs.reduce<Record<string, SourceRef[]>>((acc, ref) => {
@@ -362,39 +409,38 @@ export default function InsightPaneV2() {
             </motion.div>
 
             <motion.div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                <span>Dimension Summaries</span>
-                {isEditMode ? (
-                  <button
-                    className="ml-auto inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
-                    onClick={() => selectedSession && void addStructuredItem(selectedSession.id, 'dimension')}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    新增
-                  </button>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                {(extract?.dimensionSummaries ?? []).length === 0 ? (
-                  <div className="text-xs text-slate-400">No dimension summary yet.</div>
-                ) : (
-                  (extract?.dimensionSummaries ?? []).map((item) => (
-                    <div key={item.id} className="rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
-                      <div className="font-semibold">{item.dimension}</div>
-                      <div className="mt-1">{item.summary}</div>
-                      {isEditMode ? (
-                        <button
-                          className="mt-2 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-red-700"
-                          onClick={() => selectedSession && void deleteStructuredItem(selectedSession.id, 'dimension', item.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          删除
-                        </button>
-                      ) : null}
-                    </div>
-                  ))
-                )}
-              </div>
+              <DimensionSummariesBoard
+                title="Dimension Summaries"
+                items={dimensionSummaries}
+                sourceRefs={sourceRefs}
+                onJumpToSource={(sourceRefId, segmentId) => {
+                  if (sourceRefId) {
+                    const source = sourceRefMap[sourceRefId];
+                    if (source) {
+                      setActiveSourceRef(source.id);
+                      setActiveSegment(source.segmentId);
+                      return;
+                    }
+                  }
+                  if (segmentId) setActiveSegment(segmentId);
+                }}
+                isEditMode={isEditMode}
+                onDeleteItem={(itemId) => {
+                  if (!selectedSession || !isEditMode) return;
+                  void deleteStructuredItem(selectedSession.id, 'dimension', itemId);
+                }}
+                headerRight={
+                  isEditMode ? (
+                    <button
+                      className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+                      onClick={() => selectedSession && void addStructuredItem(selectedSession.id, 'dimension')}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      新增
+                    </button>
+                  ) : null
+                }
+              />
             </motion.div>
 
             <motion.div ref={actionItemsRef} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

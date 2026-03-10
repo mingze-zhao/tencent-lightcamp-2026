@@ -50,8 +50,8 @@ export default function AppShell() {
       </div>
 
       {/* Main Content: Split into two panes */}
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex w-full flex-col">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <div className="flex min-h-0 w-full flex-col">
           <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
             <button
               className={`rounded-md px-3 py-1.5 text-sm ${currentPage === 'workbench' ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}
@@ -93,14 +93,14 @@ export default function AppShell() {
           ) : currentPage === 'archive' ? (
             <PeopleArchivePage />
           ) : (
-            <div className="flex-1 grid overflow-hidden [grid-template-columns:minmax(420px,48%)_minmax(620px,52%)]">
+            <div className="flex-1 grid min-h-0 overflow-hidden [grid-template-columns:minmax(380px,40%)_minmax(620px,60%)]">
               {/* Left pane: Transcript */}
-              <div className="min-w-0 flex flex-col border-r border-slate-200 bg-white">
+              <div className="min-w-0 min-h-0 flex flex-col border-r border-slate-200 bg-white">
                 <TranscriptPaneV2 />
               </div>
 
               {/* Right pane: Insights & Report */}
-              <div className="min-w-0 flex flex-col bg-slate-50 overflow-y-auto">
+              <div className="min-w-0 min-h-0 flex flex-col bg-slate-50 overflow-y-auto">
                 <InsightPaneV2 />
               </div>
             </div>

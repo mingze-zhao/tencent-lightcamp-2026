@@ -19,6 +19,12 @@ const toNameMap = (elders: ElderProfile[]) =>
     acc[elder.id] = elder.name;
     return acc;
   }, {});
+const toRiskMap = (elders: ElderProfile[]) =>
+  elders.reduce<Record<string, ElderProfile['overallRisk']>>((acc, elder) => {
+    acc[elder.id] = elder.overallRisk;
+    return acc;
+  }, {});
+const riskRank = (risk?: ElderProfile['overallRisk']) => (risk === 'high' ? 3 : risk === 'medium' ? 2 : 1);
 
 const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
 const startOfWeek = (date: Date) => {
@@ -46,6 +52,7 @@ export default function ElderCalendar({
   onPickDayTimelineItem,
 }: ElderCalendarProps) {
   const nameMap = toNameMap(elders);
+  const riskMap = toRiskMap(elders);
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date(selectedDate ?? Date.now())));
   const dayMap = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
 
@@ -57,15 +64,20 @@ export default function ElderCalendar({
       const key = toLocalKey(date);
       const day = dayMap.get(key);
       const names = (day?.elderIds ?? []).map((id) => nameMap[id]).filter(Boolean);
+      const dayMaxRisk =
+        (day?.elderIds ?? [])
+          .map((id) => riskMap[id])
+          .sort((a, b) => riskRank(b) - riskRank(a))[0] ?? 'low';
       return {
         key,
         date,
         inCurrentMonth: date.getMonth() === currentMonth.getMonth(),
         hasInterview: !!day && day.elderIds.length > 0,
         names,
+        dayMaxRisk,
       };
     });
-  }, [currentMonth, dayMap, nameMap]);
+  }, [currentMonth, dayMap, nameMap, riskMap]);
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50">
@@ -114,6 +126,18 @@ export default function ElderCalendar({
                         : cell.names.length <= 2
                         ? cell.names.join('、')
                         : `${cell.names.slice(0, 2).join('、')}+${cell.names.length - 2}`;
+                    const riskClass =
+                      cell.dayMaxRisk === 'high'
+                        ? active
+                          ? 'border-red-300 bg-red-100 text-red-700'
+                          : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
+                        : cell.dayMaxRisk === 'medium'
+                        ? active
+                          ? 'border-amber-300 bg-amber-100 text-amber-700'
+                          : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                        : active
+                        ? 'border-emerald-300 bg-emerald-100 text-emerald-700'
+                        : 'border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100';
                     return (
                       <button
                         key={cell.key}
@@ -123,9 +147,7 @@ export default function ElderCalendar({
                           !cell.inCurrentMonth
                             ? 'border-transparent bg-transparent text-slate-300'
                             : cell.hasInterview
-                            ? active
-                              ? 'border-blue-300 bg-blue-100 text-blue-700'
-                              : 'border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
+                            ? riskClass
                             : 'border-slate-200 bg-white text-slate-400'
                         }`}
                       >
@@ -153,19 +175,28 @@ export default function ElderCalendar({
                     ) : (
                       <div className="overflow-x-auto pb-1">
                         <div className="flex min-w-max gap-1.5">
-                          {dayTimelineItems.map((item, idx) => (
-                            <button
-                              key={item.sessionId}
-                              className="w-28 shrink-0 rounded border border-slate-200 bg-slate-50 px-1.5 py-1 text-left hover:bg-slate-100"
-                              onClick={() => onPickDayTimelineItem?.(item)}
-                            >
-                              <div className="text-[10px] font-semibold text-slate-600">时段 {idx + 1}</div>
-                              <div className="mt-0.5 text-[11px] font-medium text-slate-800">{item.elderName}</div>
-                              <div className="mt-0.5 text-[10px] text-slate-500">
-                                {Math.round(item.duration / 60)}分 · 预警{item.warningCount}
-                              </div>
-                            </button>
-                          ))}
+                          {dayTimelineItems.map((item, idx) => {
+                            const elderRisk = riskMap[item.elderId] ?? 'low';
+                            const timelineClass =
+                              elderRisk === 'high'
+                                ? 'border-red-200 bg-red-50 hover:bg-red-100'
+                                : elderRisk === 'medium'
+                                ? 'border-amber-200 bg-amber-50 hover:bg-amber-100'
+                                : 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100';
+                            return (
+                              <button
+                                key={item.sessionId}
+                                className={`w-28 shrink-0 rounded border px-1.5 py-1 text-left ${timelineClass}`}
+                                onClick={() => onPickDayTimelineItem?.(item)}
+                              >
+                                <div className="text-[10px] font-semibold text-slate-600">时段 {idx + 1}</div>
+                                <div className="mt-0.5 text-[11px] font-medium text-slate-800">{item.elderName}</div>
+                                <div className="mt-0.5 text-[10px] text-slate-500">
+                                  {Math.round(item.duration / 60)}分 · 预警{item.warningCount}
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

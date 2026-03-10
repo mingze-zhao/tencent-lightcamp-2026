@@ -214,7 +214,7 @@ export default function TranscriptPaneV2() {
 
   return (
     <div
-      className="relative flex h-full flex-col bg-white"
+      className="relative flex h-full min-h-0 flex-col bg-white"
       ref={paneRef}
       tabIndex={0}
       onKeyDown={(event) => {
@@ -313,7 +313,7 @@ export default function TranscriptPaneV2() {
         </button>
       </div>
 
-      <div className={`flex-1 overflow-y-auto scroll-smooth ${settings.compactMode ? 'p-4' : 'p-6'}`}>
+      <div className={`min-h-0 flex-1 overflow-y-auto scroll-smooth ${settings.compactMode ? 'p-4' : 'p-6'}`}>
         {transcript.length === 0 ? (
           <div className="mx-auto mt-16 max-w-xl rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
             No transcript.
